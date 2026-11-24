@@ -9,9 +9,15 @@ async function login(ctx, email) {
   await ctx.portal.apiRequestCode(email);
   return (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
 }
+const AGREE_I = ['Instructor code of conduct', 'Independent contractor and pay terms', 'Background check consent'];
+export const fullApp = (name, email, creds = ['EMT'], extra = {}) => ({ track: 'Instructor', name, email, phone: '651-555-0100', address: '1 Main St, Cottage Grove, MN',
+  emergencyName: 'Sam Doe', emergencyPhone: '651-555-0199', credentials: creds, rolesWanted: ['Assistant Instructor'], days: ['Mon', 'Sat'], availabilityNotes: 'Off B shift',
+  licenses: { mnEms: '123456', mnEmsExp: '2028-03-31', nremt: 'E1234567', nremtExp: '2028-03-31' }, agency: 'Cottage Grove FD', years: '5', teaching: 'CPR instructor',
+  refs: [{ name: 'Ref One', relationship: 'Captain', phone: '651-555-0001' }, { name: 'Ref Two', relationship: 'Medic', email: 'r2@x.com' }], agreed: AGREE_I, ...extra });
 async function signup(ctx, name, email, creds = ['EMT']) {
   clearRl(ctx);
-  await ctx.portal.apiSignup({ name, email, phone: '651-555-0100', credentials: creds });
+  const patient = creds.includes('Student / pre-health (patient role)');
+  await ctx.portal.apiSignup(patient ? { track: 'Patient', name, email, phone: '651-555-0100', emergencyName: 'Mom', emergencyPhone: '651-555-0102', agreed: ['Patient volunteer code of conduct and waiver'] } : fullApp(name, email, creds));
   return (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
 }
 const rejects = (p, re) => assert.rejects(p, (e) => (re ? re.test(e.message) : true));
@@ -36,10 +42,13 @@ test('signup, login and pending accounts', async () => {
   const ctx = makePortal();
   await ctx.portal.apiRequestCode('stranger@x.com');
   assert.equal(ctx.mailer.sent.length, 0);
-  await rejects(ctx.portal.apiSignup({ name: 'Jo', email: 'jo@x.com', phone: '1', credentials: ['EMT'] }), /first and last/);
-  await rejects(ctx.portal.apiSignup({ name: 'Jo Smith', email: 'jo@x.com', phone: '1', credentials: [] }), /certification/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo', 'jo@x.com')), /first and last/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', [])), /certification/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { refs: [{ name: 'A', phone: '1' }] })), /two professional references/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { agreed: ['Instructor code of conduct'] })), /Independent contractor/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { licenses: {} })), /license or certification number/);
   const t = await signup(ctx, 'Jo Smith', 'Jo@X.com');
-  assert.ok(ctx.mailer.sent.some((m) => m.to === 'admin@resqedu.com' && /New instructor signup/.test(m.subject)));
+  assert.ok(ctx.mailer.sent.some((m) => m.to === 'admin@resqedu.com' && /New instructor application/.test(m.subject)));
   const d = await ctx.portal.apiGetData(t);
   assert.equal(d.me.status, 'Pending');
   assert.equal(d.admin, undefined);
@@ -196,4 +205,77 @@ test('declining an account releases holds; reminders go out once', async () => {
   assert.equal((await ctx.portal.runReminders()).sent, 1);
   assert.equal((await ctx.portal.runReminders()).sent, 0);
   assert.ok(ctx.mailer.sent.some((m) => m.to === 'bo@x.com' && /^Reminder/.test(m.subject)));
+});
+
+test('application checklist, private pay forms, patient track', async () => {
+  const ctx = makePortal();
+  const admin = await login(ctx, 'admin@resqedu.com');
+  const t = await signup(ctx, 'Ivy Inst', 'ivy@x.com');
+  let d = await ctx.portal.apiGetData(t);
+  assert.equal(d.me.application.licenses.mnEms, '123456');
+  assert.equal(d.me.application.licenses.mnEmsExp, '2028-03-31');
+  assert.equal(d.me.application.refs[1].email, 'r2@x.com');
+  assert.deepEqual(d.me.checklist.missing, ['Cert card', 'Resume', 'W-9', 'Direct deposit']);
+  await ctx.portal.apiUploadDoc(t, { kind: 'Cert card', credential: 'EMT', fileName: 'c.jpg', mime: 'image/jpeg', data: 'AAAA' });
+  await rejects(ctx.portal.apiUploadDoc(t, { kind: 'Resume', fileName: 'r.jpg', mime: 'image/jpeg', data: 'AAAA' }), /PDF or Word/);
+  await ctx.portal.apiUploadDoc(t, { kind: 'Resume', fileName: 'r.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: 'AAAA' });
+  await ctx.portal.apiUploadDoc(t, { kind: 'W-9', fileName: 'w9.pdf', mime: 'application/pdf', data: 'AAAA' });
+  await ctx.portal.apiUploadDoc(t, { kind: 'Direct deposit', fileName: 'dd.pdf', mime: 'application/pdf', data: 'AAAA' });
+  // pay forms go to the private folder, never get a link
+  const priv = ctx.files.made.filter((m) => m.folderId === 'PRIV');
+  assert.equal(priv.length, 2);
+  const certRows = ctx.tabs.Certs.slice(1);
+  for (const r of certRows.filter((r) => r[7] === 'W-9' || r[7] === 'Direct deposit')) { assert.equal(r[5], ''); assert.equal(r[6], ''); }
+  d = await ctx.portal.apiGetData(t);
+  assert.equal(d.me.checklist.complete, true);
+  const ad = await ctx.portal.apiGetData(admin);
+  const ivy = ad.admin.instructors.find((i) => i.email === 'ivy@x.com');
+  assert.equal(ivy.checklist.complete, true);
+  assert.ok(ivy.certs.filter((c) => c.kind === 'W-9').every((c) => !c.link && !c.fileName));
+  // editing the application keeps one row
+  await ctx.portal.apiSaveApplication(t, fullApp('Ivy Inst', 'ignored@x.com', ['EMT', 'Paramedic'], { years: '7' }));
+  assert.equal(ctx.tabs.Applications.length, 2);
+  d = await ctx.portal.apiGetData(t);
+  assert.equal(d.me.application.years, '7');
+  assert.deepEqual(d.me.credentials, ['EMT', 'Paramedic']);
+  // patient track needs only agreements
+  const p = await signup(ctx, 'Pat Patient', 'pat@x.com', ['Student / pre-health (patient role)']);
+  d = await ctx.portal.apiGetData(p);
+  assert.equal(d.me.checklist.track, 'Patient');
+  assert.equal(d.me.checklist.complete, true);
+  await rejects(ctx.portal.apiSignup({ track: 'Patient', name: 'No Waiver', email: 'nw@x.com', phone: '1', emergencyName: 'A', emergencyPhone: '2', agreed: [] }), /waiver/);
+});
+
+test('staffing follows enrollment: preview, apply, overstaffing kept', async () => {
+  const ctx = makePortal();
+  const admin = await login(ctx, 'admin@resqedu.com');
+  let r = await ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 12, false);
+  const find = (id) => r.changes.find((c) => c.slotId === id);
+  assert.equal(find('EMT-2027-01-D04-PM-AST').to, 4);
+  assert.equal(find('EMT-2027-01-D09-AM-PAT').to, 12);
+  assert.equal(find('EMT-2027-01-D01-PM-AST').to, 2); // 4 per ratio minus 2 BLS instructors
+  assert.equal(find('EMT-2027-01-D11-PM-EVAL'), undefined); // 6 stays 6
+  assert.equal(r.applied, false);
+  let d = await ctx.portal.apiGetData(admin);
+  assert.equal(slot(d, 'EMT-2027-01-D04-PM-AST').openings, 3); // preview didn't write
+  r = await ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 13, true);
+  d = await ctx.portal.apiGetData(admin);
+  assert.equal(slot(d, 'EMT-2027-01-D04-PM-AST').openings, 5);
+  assert.equal(slot(d, 'EMT-2027-01-D01-PM-BLS').openings, 3);
+  assert.equal(slot(d, 'EMT-2027-01-D01-PM-AST').openings, 2);
+  assert.equal(slot(d, 'EMT-2027-01-D10-AM-MED').openings, 6); // fixed
+  assert.equal(d.courses.find((c) => c.id === 'EMT-2027-01').students, 13);
+  // fill 5 assistants on a block, then drop enrollment: nobody removed, flagged over
+  const emails = ['a1', 'a2', 'a3', 'a4', 'a5'];
+  for (const e of emails) { const tk = await signup(ctx, 'Asst ' + e.toUpperCase(), e + '@x.com'); await ctx.portal.apiRequestSlot(tk, 'EMT-2027-01-D04-PM-AST'); }
+  r = await ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 7, true);
+  assert.ok(r.over.some((o) => o.slotId === 'EMT-2027-01-D04-PM-AST' && o.held === 5 && o.to === 3));
+  d = await ctx.portal.apiGetData(admin);
+  const s4 = slot(d, 'EMT-2027-01-D04-PM-AST');
+  assert.equal(s4.openings, 3); assert.equal(s4.over, 2); assert.equal(s4.people.length, 5);
+  assert.equal(slot(d, 'EMT-2027-01-D11-PM-EVAL').openings, 4); // 8 or fewer -> 4
+  // growing again promotes the waitlist
+  const w = await signup(ctx, 'Wait Ling', 'w@x.com');
+  assert.equal((await ctx.portal.apiRequestSlot(w, 'EMT-2027-01-D05-PM-AST')).status, 'Pending');
+  await rejects(ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 0, false), /number of students/);
 });

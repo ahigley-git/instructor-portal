@@ -42,6 +42,19 @@ addReq('EMT-2027-01-D11-PM-EVAL', 'jordan@example.com', 'Jordan Ruiz', 'Pending'
 addReq('EMT-2027-01-D10-AM-MED', 'jordan@example.com', 'Jordan Ruiz', 'Pending');
 addReq('EMT-2027-01-D04-PM-PAT', 'priya@example.com', 'Priya Nair', 'Pending');
 addReq('EMT-2027-01-D02-AM-PRI', 'sarah@example.com', 'Sarah Lund', 'Waitlist');
+const addApp = (email, track, o = {}) => tabs.Applications.push(head('Applications').map((h) => ({ Email: email, Track: track, Submitted: serial('11/20/2026'), Updated: serial('11/20/2026'),
+  Address: '100 Main St, Cottage Grove, MN', 'Emergency contact': 'Pat Doe', 'Emergency phone': '651-555-0188', Agency: o.agency || '', 'Years in EMS': o.years || '',
+  'Teaching experience': o.teaching || '', 'Roles wanted': o.roles || '', Availability: o.avail || '', 'MN EMS license #': o.mn || '', 'MN EMS exp': o.mn ? serial('3/31/2028') : '',
+  'NREMT #': o.nr || '', 'NREMT exp': o.nr ? serial('3/31/2028') : '', 'Reference 1': o.refs ? 'Capt. Dana Ek | Captain | 651-555-0111 | ' : '', 'Reference 2': o.refs ? 'Lee Park | Paramedic | | lee@example.com' : '',
+  Agreements: track === 'Patient' ? 'Patient volunteer code of conduct and waiver v1 (11/20/2026)' : 'Instructor code of conduct v1 (11/20/2026); Independent contractor and pay terms v1 (11/20/2026); Background check consent v1 (11/20/2026)' }[h] ?? '')));
+const addDoc = (email, kind, cred) => tabs.Certs.push(head('Certs').map((h) => ({ Uploaded: serial('11/20/2026'), Email: email, Credential: cred || kind, 'File name': kind === 'W-9' || kind === 'Direct deposit' ? '(private)' : cred + '.pdf', Link: kind === 'W-9' || kind === 'Direct deposit' ? '' : '#demo-file', Kind: kind }[h] ?? '')));
+addApp('admin@resqedu.com', 'Instructor', { agency: 'Cottage Grove FD', years: '12', teaching: 'ResQ program director', roles: 'Primary Instructor', avail: 'Mon, Tue, Wed. Off-shift days', mn: '411111', nr: 'P1111111', refs: 1 });
+['Cert card', 'Resume', 'W-9', 'Direct deposit'].forEach((k) => addDoc('admin@resqedu.com', k, k === 'Cert card' ? 'Paramedic' : k));
+addApp('sarah@example.com', 'Instructor', { agency: 'Lake Johanna FD', years: '4', teaching: 'BLS instructor, FTO', roles: 'Assistant Instructor, AHA BLS Instructor', avail: 'Mon, Fri, Sat', mn: '422222', nr: 'E2222222', refs: 1 });
+['Cert card', 'Resume', 'W-9', 'Direct deposit'].forEach((k) => addDoc('sarah@example.com', k, k === 'Cert card' ? 'AHA BLS Instructor' : k));
+addApp('jordan@example.com', 'Instructor', { agency: 'Metro EMS', years: '9', teaching: 'Psychomotor evaluator 3 years', roles: 'Skills Evaluator, Station Medic', avail: 'Thu, Fri', mn: '433333', nr: 'P3333333', refs: 1 });
+addDoc('jordan@example.com', 'Cert card', 'Paramedic'); addDoc('jordan@example.com', 'Resume', 'Resume');
+addApp('priya@example.com', 'Patient');
 // Example pay so the money views have something to show (the real sheet starts at $0)
 const payCol = head('Slots').indexOf('Pay ($)');
 for (const r of tabs.Slots.slice(1)) { if (r[2] === 'Assistant Instructor') r[payCol] = 100; if (r[2] === 'AHA BLS Instructor') r[payCol] = 130; }

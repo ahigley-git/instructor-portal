@@ -47,7 +47,7 @@ export function makePortal(tabs = seed(), cfgOver = {}) {
   const kv = memKv(), mailer = memMailer(), files = memFiles();
   const portal = createPortal({ store: memStore(tabs), files, mailer, kv, cfg: {
     secret: 'test-secret', adminEmails: ['admin@resqedu.com', 'ryan.kelly@resqedu.com'], replyTo: 'admin@resqedu.com',
-    certFolderId: 'ROOT', siteUrl: 'https://instructors.resqedu.com', ...cfgOver } });
+    certFolderId: 'ROOT', privateFolderId: 'PRIV', siteUrl: 'https://instructors.resqedu.com', ...cfgOver } });
   return { portal, tabs, kv, mailer, files };
 }
 

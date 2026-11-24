@@ -198,6 +198,36 @@
   .switch:first-child{border-top:0}
   .switch input{width:18px;height:18px}
   .switch .d{font-size:13px;color:var(--slate)}
+  .login.wide{max-width:760px}
+  input[type=date],input[type=number]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;outline:none;min-height:44px}
+  .inline-form input[type=date],.inline-form input[type=number],td input[type=number]{width:auto;min-height:0;padding:7px 9px}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:12px 14px 14px;margin:0 0 14px}
+  legend{font-weight:800;font-size:14px;padding:0 6px}
+  .track{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .track button{border:2px solid var(--line);background:#fff;border-radius:10px;padding:12px;text-align:left;cursor:pointer}
+  .track button.on{border-color:var(--ember);background:var(--ember-soft)}
+  .track b{display:block}.track span{font-size:13px;color:var(--slate)}
+  details.agr{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:8px;background:#FAFAFB}
+  details.agr summary{cursor:pointer;font-weight:700;font-size:14px}
+  details.agr p{font-size:13.5px;color:#333;margin:8px 0;white-space:pre-line}
+  .cl{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .cl span{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .cl .y{background:var(--ok-soft);color:var(--ok)} .cl .n{background:var(--ember-soft);color:var(--ember)}
+  .appsum{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;font-size:13.5px;margin-top:8px}
+  .appsum dt{color:var(--slate)} .appsum dd{margin:0}
+  @media(max-width:600px){.appsum{grid-template-columns:1fr}.appsum dd{margin-bottom:6px}}
+  .cal{width:100%;border-collapse:separate;border-spacing:0}
+  .cal td{vertical-align:top;border-bottom:1px solid var(--line);padding:10px 8px}
+  .cal td.dcol{width:120px;font-weight:700;white-space:nowrap}
+  .cal td.dcol span{display:block;font-weight:500;font-size:12px;color:var(--slate)}
+  .ce{display:flex;flex-direction:column;gap:5px}
+  .cr{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.3}
+  .cr .f{flex:0 0 auto;font-weight:800;font-size:12px;padding:2px 7px;border-radius:6px;min-width:44px;text-align:center}
+  .f.full{background:var(--ok-soft);color:var(--ok)} .f.pend{background:var(--warn-soft);color:var(--warn)} .f.gap{background:var(--ember-soft);color:var(--ember)} .f.over{background:#EEE6F8;color:#5B3A8C} .f.off{background:#EEE;color:#888}
+  .cr .nm{color:var(--slate);font-size:12px}
+  .cr .nm b{color:var(--ink);font-weight:600}
+  .cr.mine .rl{font-weight:800;color:var(--ember)}
+  @media(max-width:700px){.cal thead{display:none}.cal tr{display:block;border-bottom:2px solid var(--line);padding:6px 0}.cal td{display:block;border:0;padding:4px 0}.cal td.dcol{width:auto}.cal td[data-b]::before{content:attr(data-b);font-family:"Courier New",monospace;font-weight:700;font-size:11px;letter-spacing:1px;color:var(--slate);display:block;margin-bottom:4px}}
   .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--slate);margin:-6px 0 14px}
 </style>
 </head>
@@ -218,20 +248,13 @@
           <div style="height:14px"></div>
           <button class="btn block" id="btn-send" type="submit">Send my code</button>
         </form>
-        <div class="signup-link">New to teaching with ResQ? <button class="linkbtn" id="btn-show-signup" type="button">Create an instructor account</button></div>
+        <div class="signup-link">New to teaching or volunteering with ResQ? <button class="linkbtn" id="btn-show-signup" type="button">Apply here</button></div>
       </div>
       <div id="step-signup" class="hidden">
-        <p>Tell us about yourself. You can hold class slots right away; ResQ reviews your account and certifications before approving them.</p>
-        <form id="form-signup">
-          <div class="form-grid">
-            <div class="full"><label for="su-name">Full name</label><input id="su-name" type="text" autocomplete="name" required></div>
-            <div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>
-            <div><label for="su-phone">Mobile phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div>
-            <div class="full"><label>Certifications you hold</label><div class="checks" id="su-creds"></div></div>
-            <div class="full"><label for="su-about">Experience (optional)</label><textarea id="su-about" placeholder="Agency, years in EMS, teaching experience, roles you're interested in"></textarea></div>
-          </div>
+        <p>Apply to teach or volunteer with ResQ. You can hold class slots as soon as you apply; ResQ reviews your application and documents before approving them.</p>
+        <form id="form-signup"><div id="su-form"><div class="loading"><div class="spinner"></div>Loading the application…</div></div>
           <div style="height:14px"></div>
-          <button class="btn block" id="btn-signup" type="submit">Create account and send my code</button>
+          <button class="btn block" id="btn-signup" type="submit">Submit application and send my code</button>
         </form>
         <div style="margin-top:14px;font-size:14px"><button class="linkbtn" id="btn-signup-back" type="button">Back to log in</button></div>
       </div>
@@ -273,7 +296,8 @@
   var memToken = null;
   var CREDS = ['EMR','EMT','AEMT','Paramedic','RN','Physician / PA / NP','AHA BLS Instructor','AHA ACLS/PALS Instructor','EMT Instructor (MN OEMS)','Psychomotor evaluator','Firefighter','Student / pre-health (patient role)','Other'];
   var S = { data:null, tab:'slots', course:null, role:'All', onlyOpen:false, mineFilter:'Upcoming', payFilter:'Owed', payCourse:'All',
-    bCourse:null, openSess:{}, insSearch:'', insFilter:'All', dropFor:null, assignFor:null, insOpen:{} };
+    bCourse:null, openSess:{}, insSearch:'', insFilter:'All', dropFor:null, assignFor:null, insOpen:{}, calCourse:null, calGaps:false,
+    track:'Instructor', pub:null, queued:[], staff:null, upKind:'Cert card' };
 
   function getToken(){ try{ return localStorage.getItem(TOKEN_KEY) || memToken; }catch(e){ return memToken; } }
   function setToken(t){ memToken = t; try{ if(t) localStorage.setItem(TOKEN_KEY,t); else localStorage.removeItem(TOKEN_KEY); }catch(e){} }
@@ -332,22 +356,50 @@
     var email=$('email').value.trim(); if(!email) return;
     var btn=$('btn-send'); busy(btn,true,'Sending…'); setMsg('');
     api('apiRequestCode',email).then(function(r){
-      if(r && r.unknown){ setMsg('We don\'t have an instructor account for '+email+'. Create one below.','err'); $('su-email').value=email; step('signup'); return; }
+      if(r && r.unknown){ showSignup(); setMsg('We don\'t have an account for '+email+'. Apply below.','err'); return; }
       toCode(email,'A code is on its way to <b>'+esc(email)+'</b>. Check your inbox (and spam).');
     }).catch(function(err){ setMsg(err.message,'err'); }).then(function(){ busy(btn,false); });
   }
+  function showSignup(){
+    $('login').querySelector('.login').classList.add('wide'); setMsg(''); step('signup');
+    var draw=function(){ $('su-form').innerHTML = appForm('su', {email:$('email').value.trim()}, S.track, true); };
+    if(S.pub) return draw();
+    api('apiPublicConfig').then(function(c){ S.pub=c; draw(); }).catch(function(e){ $('su-form').innerHTML='<p class="msg err">'+esc(e.message)+'</p>'; });
+  }
   function signup(e){
     e.preventDefault();
-    var btn=$('btn-signup'); busy(btn,true,'Creating…'); setMsg('');
-    var p={ name:val('su-name'), email:val('su-email'), phone:val('su-phone'), about:val('su-about'), credentials:checked('su-cred') };
+    var p=readAppForm('su', S.track), files=[], tooBig=null;
+    if(S.track==='Instructor'){
+      var cred=val('su-certname')||'Certification card';
+      [['su-f-cert','Cert card'],['su-f-resume','Resume'],['su-f-w9','W-9'],['su-f-dd','Direct deposit']].forEach(function(x){
+        var el=$(x[0]); if(!el) return;
+        Array.prototype.forEach.call(el.files,function(f){ if(f.size>4*1024*1024) tooBig=f.name; files.push({kind:x[1],file:f,credential:cred}); });
+      });
+      if(tooBig){ setMsg(tooBig+' is over 4 MB. Pick a smaller photo or PDF.','err'); return; }
+    }
+    var btn=$('btn-signup'); busy(btn,true,'Submitting…'); setMsg('');
     api('apiSignup',p).then(function(r){
-      toCode(p.email.trim(), (r.existing?'You already have an account, so we just sent a login code':'Account created. We sent a login code')+' to <b>'+esc(p.email.trim())+'</b>.');
+      S.queued=files;
+      $('login').querySelector('.login').classList.remove('wide');
+      toCode(p.email.trim(), (r.existing?'You already have an account. We saved your application and sent a login code':'Application received. We sent a login code')+' to <b>'+esc(p.email.trim())+'</b>.'+(files.length?' Your '+files.length+' document'+(files.length>1?'s':'')+' upload right after you log in.':''));
     }).catch(function(err){ setMsg(err.message,'err'); }).then(function(){ busy(btn,false); });
+  }
+  function readFile(f){ return new Promise(function(res,rej){ var fr=new FileReader(); fr.onload=function(){ res(fr.result); }; fr.onerror=rej; fr.readAsDataURL(f); }); }
+  function uploadQueued(){
+    var q=S.queued||[]; S.queued=[]; if(!q.length) return Promise.resolve();
+    var i=0, failed=[];
+    function next(){
+      if(i>=q.length){ if(failed.length) toast('Some files didn\'t upload ('+failed.join(', ')+'). Add them on the Application tab.'); return Promise.resolve(); }
+      var it=q[i++]; setMsg('Uploading '+i+' of '+q.length+': '+it.file.name+'…','ok');
+      return readFile(it.file).then(function(data){ return api('apiUploadDoc',getToken(),{kind:it.kind,credential:it.credential,fileName:it.file.name,mime:it.file.type||'application/pdf',data:data}); })
+        .catch(function(){ failed.push(it.file.name); }).then(next);
+    }
+    return next();
   }
   function verify(e){
     e.preventDefault();
     var btn=$('btn-verify'); busy(btn,true,'Checking…'); setMsg('');
-    api('apiVerifyCode',pendingEmail,$('code').value).then(function(r){ setToken(r.token); start(); })
+    api('apiVerifyCode',pendingEmail,$('code').value).then(function(r){ setToken(r.token); return uploadQueued().then(function(){ setMsg(''); start(); }); })
       .catch(function(err){ setMsg(err.message,'err'); }).then(function(){ busy(btn,false); });
   }
 
@@ -379,21 +431,68 @@
   }
   function render(){
     var d=S.data, tabs=[];
-    if(d.me.isInstructor){ tabs.push(['slots','Open slots'],['mine','My schedule'],['earn','Earnings'],['profile','Profile & certs']); }
-    else tabs.push(['slots','Course overview']);
+    if(d.me.isInstructor){ tabs.push(['slots','Open slots'],['cal','Calendar'],['mine','My schedule'],['earn','Earnings'],['profile','Application',(d.me.checklist&&!d.me.checklist.complete)?'!':0]); }
+    else tabs.push(['slots','Course overview'],['cal','Calendar']);
     if(d.me.isAdmin){ var c=adminCounts(); tabs.push(['approvals','Approvals',(c.accounts+c.requests+c.drops)],['instructors','Instructors'],['builder','Schedule builder'],['payments','Payments',c.owed],['settings','Settings']); }
     if(!tabs.some(function(t){return t[0]===S.tab;})) S.tab=tabs[0][0];
     $('tabs').innerHTML = tabs.map(function(t){ return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'">'+t[1]+(t[2]?'<span class="cnt">'+t[2]+'</span>':'')+'</button>'; }).join('');
     var y=window.scrollY;
-    $('view').innerHTML = ({slots:vSlots,mine:vMine,earn:vEarn,profile:vProfile,approvals:vApprovals,instructors:vInstructors,builder:vBuilder,payments:vPayments,settings:vSettings}[S.tab])();
+    $('view').innerHTML = ({slots:vSlots,cal:vCal,mine:vMine,earn:vEarn,profile:vProfile,approvals:vApprovals,instructors:vInstructors,builder:vBuilder,payments:vPayments,settings:vSettings}[S.tab])();
     window.scrollTo(0,y);
   }
+
+  // ---------- application form ----------
+  function cfgPub(){ return S.pub || (S.data && S.data.config) || {roles:[],agreements:[],days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']}; }
+  function inp(id,label,v,type,cls,extra){ return '<div class="'+(cls||'')+'"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(v||'')+'"'+(extra||'')+'></div>'; }
+  function appForm(px, a, track, withFiles){
+    a=a||{}; var c=cfgPub(), L=a.licenses||{}, refs=a.refs||[{},{}], agreed=a.agreements||'';
+    var av=a.availability||'', days=(c.days||[]).filter(function(d){ return av.indexOf(d)>=0; }), avNotes=av.replace(/^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(, )?)+(\.\s*)?/,'');
+    var h='';
+    if(withFiles) h+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="track" data-v="Instructor"><b>Instructor or evaluator</b><span>Teach, assist, run stations or evaluate</span></button>'+
+      '<button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="track" data-v="Patient"><b>Patient volunteer only</b><span>Play patients in scenarios and exams</span></button></div>';
+    h+='<fieldset><legend>Contact</legend><div class="form-grid">'+inp(px+'-name','Full name',a.name,'text','full',' autocomplete="name"')+
+      (withFiles?inp(px+'-email','Email',a.email,'email','',' autocomplete="email"'):'')+inp(px+'-phone','Mobile phone',a.phone,'tel','',' autocomplete="tel"')+
+      (track==='Instructor'?inp(px+'-address','Mailing address',a.address,'text','full',' autocomplete="street-address"'):'')+
+      inp(px+'-emname','Emergency contact name',a.emergencyName)+inp(px+'-emphone','Emergency contact phone',a.emergencyPhone,'tel')+'</div></fieldset>';
+    if(track==='Instructor'){
+      h+='<fieldset><legend>Certifications</legend><div class="checks">'+credChecks(px+'-cred',a.credentials||[])+'</div><div class="form-grid" style="margin-top:10px">'+
+        inp(px+'-mnems','MN EMS license #',L.mnEms)+inp(px+'-mnemsexp','Expires',L.mnEmsExp,'date')+inp(px+'-nremt','NREMT #',L.nremt)+inp(px+'-nremtexp','Expires',L.nremtExp,'date')+
+        inp(px+'-aha','AHA instructor ID',L.aha)+inp(px+'-ahaexp','Expires',L.ahaExp,'date')+inp(px+'-other','Other licenses (number and expiration)',L.other,'text','full')+'</div></fieldset>';
+      h+='<fieldset><legend>Experience and availability</legend><div class="form-grid">'+inp(px+'-agency','Current agency',a.agency)+inp(px+'-years','Years in EMS',a.years,'number',''," min=\"0\"")+
+        '<div class="full"><label for="'+px+'-teach">Teaching experience</label><textarea id="'+px+'-teach" placeholder="Courses you\'ve taught, instructor certifications, precepting">'+esc(a.teaching||'')+'</textarea></div>'+
+        '<div class="full"><label>Roles you want</label><div class="checks">'+(c.roles||[]).filter(function(r){return r.name!=='Patient';}).map(function(r){ return '<label><input type="checkbox" class="'+px+'-role" value="'+esc(r.name)+'"'+((a.rolesWanted||[]).indexOf(r.name)>=0?' checked':'')+'> '+esc(r.name)+'</label>'; }).join('')+'</div></div>'+
+        '<div class="full"><label>Days you can usually work</label><div class="checks">'+(c.days||[]).map(function(d){ return '<label><input type="checkbox" class="'+px+'-day" value="'+d+'"'+(days.indexOf(d)>=0?' checked':'')+'> '+d+'</label>'; }).join('')+'</div></div>'+
+        inp(px+'-avnotes','Availability notes (shift pattern, blackout dates)',avNotes,'text','full')+'</div></fieldset>';
+      h+='<fieldset><legend>Two professional references</legend><div class="form-grid">'+[0,1].map(function(i){ var r=refs[i]||{};
+        return inp(px+'-r'+i+'n','Reference '+(i+1)+' name',r.name)+inp(px+'-r'+i+'r','Relationship (supervisor, coworker…)',r.relationship)+inp(px+'-r'+i+'p','Phone',r.phone,'tel')+inp(px+'-r'+i+'e','Email',r.email,'email'); }).join('')+'</div></fieldset>';
+      if(withFiles) h+='<fieldset><legend>Documents (PDF or photo, under 4 MB each)</legend><div class="form-grid">'+
+        '<div class="full"><label for="su-f-cert">Copies of your license and certification cards (pick several if needed)</label><input id="su-f-cert" type="file" multiple accept="application/pdf,image/*"></div>'+
+        inp('su-certname','Which cards are these?','','text','full',' placeholder="e.g. MN EMT license, NREMT, BLS Instructor"')+
+        '<div><label for="su-f-resume">Resume (PDF or Word)</label><input id="su-f-resume" type="file" accept="application/pdf,.doc,.docx"></div>'+
+        '<div><label for="su-f-w9">W-9</label><input id="su-f-w9" type="file" accept="application/pdf,image/*"></div>'+
+        '<div class="full"><label for="su-f-dd">Direct deposit form</label><input id="su-f-dd" type="file" accept="application/pdf,image/*"></div></div>'+
+        '<p class="note">The W-9 and direct deposit form go to a locked folder that only ResQ\'s payroll contact can open. They\'re never shown in the portal. You can also add any of these later.</p></fieldset>';
+    }
+    var ag=(c.agreements||[]).filter(function(x){ return x.appliesTo==='Both'||x.appliesTo===track; });
+    h+='<fieldset><legend>Agreements</legend>'+ag.map(function(x,i){ return '<details class="agr"><summary>'+esc(x.name)+'</summary><p>'+esc(x.text)+'</p></details>'+
+      '<label class="small" style="display:flex;gap:8px;margin:0 0 10px;font-weight:600"><input type="checkbox" class="'+px+'-agr" value="'+esc(x.name)+'"'+(agreed.indexOf(x.name)>=0?' checked':'')+'> I have read and agree to the '+esc(x.name.toLowerCase())+'</label>'; }).join('')+'</fieldset>';
+    return h;
+  }
+  function readAppForm(px, track){
+    var refs=[0,1].map(function(i){ return {name:val(px+'-r'+i+'n'),relationship:val(px+'-r'+i+'r'),phone:val(px+'-r'+i+'p'),email:val(px+'-r'+i+'e')}; });
+    return { track:track, name:val(px+'-name'), email:val(px+'-email'), phone:val(px+'-phone'), address:val(px+'-address'), emergencyName:val(px+'-emname'), emergencyPhone:val(px+'-emphone'),
+      credentials:checked(px+'-cred'), licenses:{mnEms:val(px+'-mnems'),mnEmsExp:val(px+'-mnemsexp'),nremt:val(px+'-nremt'),nremtExp:val(px+'-nremtexp'),aha:val(px+'-aha'),ahaExp:val(px+'-ahaexp'),other:val(px+'-other')},
+      agency:val(px+'-agency'), years:val(px+'-years'), teaching:val(px+'-teach'), rolesWanted:checked(px+'-role'), days:checked(px+'-day'), availabilityNotes:val(px+'-avnotes'),
+      refs:refs, agreed:checked(px+'-agr') };
+  }
+  function checkChips(cl){ return '<div class="cl">'+cl.items.map(function(i){ return '<span class="'+(i.done?'y':'n')+'">'+(i.done?'✓ ':'✗ ')+esc(i.label)+'</span>'; }).join('')+'</div>'; }
 
   // ---------- Open slots ----------
   function vSlots(){
     var d=S.data, me=d.me, out='';
     out+='<h2>'+(me.isInstructor?'Open slots':'Course overview')+'</h2><p class="sub">Pick the blocks you can teach. Your request holds the spot until a ResQ admin approves it. If a slot is full, you join the waitlist and move up automatically.</p>';
-    if(me.isInstructor && me.status==='Pending') out+='<div class="warnbox"><b>Your account is under review.</b> You can request slots now and they\'ll be held for you. ResQ will check your certifications, then approve your account and your slots.</div>';
+    if(me.isInstructor && me.status==='Pending') out+='<div class="warnbox"><b>Your account is under review.</b> You can request slots now and they\'ll be held for you. ResQ will check your application and documents, then approve your account and your slots.</div>';
+    if(me.isInstructor && me.checklist && !me.checklist.complete) out+='<div class="warnbox">Your application is missing: <b>'+esc(me.checklist.missing.join(', '))+'</b>. <button class="linkbtn" data-act="tab" data-v="profile">Finish it on the Application tab</button></div>';
     if(!d.courses.length) return out+'<div class="card"><p class="empty">No courses are open for sign-up right now.</p></div>';
     var course = d.courses.filter(function(c){return c.id===S.course;})[0] || d.courses[0];
     var roles = ['All'].concat(d.config.roles.filter(function(r){return r.active;}).map(function(r){return r.name;}));
@@ -427,7 +526,7 @@
     } else if(me.isInstructor && !s.past && sl.status==='Open' && s.status==='Open'){
       act='<button class="btn small'+(left>0?'':' dark')+'" data-act="request" data-id="'+esc(sl.id)+'">'+(left>0?'Request':'Join waitlist')+'</button>';
     }
-    var fill = left>0 ? '<b>'+left+'</b> of '+sl.openings+' open' : '<b>Full</b>'+(sl.waitlist?' · '+sl.waitlist+' waiting':'');
+    var fill = left>0 ? '<b>'+left+'</b> of '+sl.openings+' open' : '<b>Full</b>'+(sl.waitlist?' · '+sl.waitlist+' waiting':'')+(me.isAdmin&&sl.over?' · <span style="color:#5B3A8C">over by '+sl.over+'</span>':'');
     var warn = me.isInstructor && me.status==='Approved' && !sl.qualified && !sl.mine ? '<div class="n" style="color:var(--warn)">You\'re not cleared for this role yet. You can still request it and ResQ will review.</div>' : '';
     var people = sl.people && sl.people.length ? '<div class="people">'+sl.people.map(function(p){ return '<span class="pp">'+esc(p.name)+' '+pill(p.status, p.status==='Waitlist'?'WL':p.status)+'</span>'; }).join('')+'</div>' : '';
     return '<div class="slot"><div><div class="r">'+esc(sl.role)+(sl.status!=='Open'?' '+pill(sl.status):'')+'</div>'+(sl.notes?'<div class="n">'+esc(sl.notes)+'</div>':'')+
@@ -471,25 +570,60 @@
     }).join('')+'</tbody></table></div>';
   }
 
-  // ---------- Profile ----------
+  // ---------- Application ----------
   function vProfile(){
-    var d=S.data, me=d.me, out='<h2>Profile & certs</h2><p class="sub">Keep your contact info and certifications current. ResQ uses your uploaded cards to clear you for roles.</p>';
-    out+='<div class="grid g2"><div class="card"><h3>Your info</h3><div class="form-grid">'+
-      '<div class="full"><label>Name</label><input id="pf-name" type="text" value="'+esc(me.name)+'"></div>'+
-      '<div><label>Email</label><input type="email" value="'+esc(me.email)+'" disabled></div><div><label>Phone</label><input id="pf-phone" type="tel" value="'+esc(me.phone)+'"></div>'+
-      '<div class="full"><label>Certifications</label><div class="checks">'+credChecks('pf-cred',me.credentials)+'</div></div>'+
-      '<div class="full"><label>Experience</label><textarea id="pf-about">'+esc(me.about)+'</textarea></div></div>'+
-      '<div style="margin-top:12px"><button class="btn" data-act="saveProfile">Save</button></div></div>';
-    out+='<div><div class="card"><h3>Account</h3><p>Status: '+pill(me.status)+'</p><p class="small">Cleared roles: '+(me.roles.length?esc(me.roles.join(', ')):'<span class="muted">none yet</span>')+'</p>'+
-      '<p class="small muted">Patient slots are open to every approved account.</p></div>';
-    out+='<div class="card"><h3>Certification cards</h3>';
-    out+= d.certs.length ? '<div class="list">'+d.certs.map(function(c){ return '<div class="row"><div><div class="t">'+esc(c.credential)+'</div><div class="s">'+esc(c.fileName)+'</div></div><div class="s">'+(c.expires?'Expires '+esc(c.expires)+'<br>':'')+'Uploaded '+esc(c.uploaded)+'</div></div>'; }).join('')+'</div>' : '<p class="empty">No cards uploaded yet.</p>';
+    var d=S.data, me=d.me, cl=me.checklist, a=me.application, track=(a&&a.track)||S.appTrack||'Instructor';
+    var out='<h2>My application</h2><p class="sub">Keep your application and documents current. ResQ uses them to approve your account and clear you for roles.</p>';
+    out+='<div class="card"><div><b>Status:</b> '+pill(me.status)+' <span class="small muted">Cleared for: '+(me.roles.length?esc(me.roles.join(', ')):'none yet')+'</span></div>'+
+      checkChips(cl)+(cl.complete?'<p class="small" style="color:var(--ok);margin:4px 0 0">Everything ResQ needs is in.</p>':'<p class="small muted" style="margin:4px 0 0">Still needed: '+esc(cl.missing.join(', '))+'</p>')+'</div>';
+    out+='<div class="grid g2"><div class="card"><h3>Documents</h3>';
+    out+= d.certs.length ? '<div class="list">'+d.certs.map(function(c){ var priv=c.kind==='W-9'||c.kind==='Direct deposit';
+      return '<div class="row"><div><div class="t">'+esc(c.kind==='Cert card'?c.credential:c.kind)+'</div><div class="s">'+(priv?'On file (private)':esc(c.fileName))+'</div></div><div class="s">'+(c.expires?'Expires '+esc(c.expires)+'<br>':'')+'Uploaded '+esc(c.uploaded)+'</div></div>'; }).join('')+'</div>' : '<p class="empty">No documents uploaded yet.</p>';
     if(d.config.uploads){
-      out+='<div class="form-grid" style="margin-top:12px"><div><label>Certification</label><select id="up-cred"><option value="">Pick one…</option>'+CREDS.concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div>'+
-        '<div><label>Expires</label><input id="up-exp" type="date"></div><div class="full"><label>File (PDF or photo, under 4 MB)</label><input id="up-file" type="file" accept="application/pdf,image/*"></div></div>'+
+      var kinds=track==='Patient'?['Cert card']:['Cert card','Resume','W-9','Direct deposit'];
+      if(kinds.indexOf(S.upKind)<0) S.upKind='Cert card';
+      out+='<div style="margin-top:12px"><label>Upload a document</label>'+chips('upKind',kinds.map(function(k){return [k,k==='Cert card'?'Cert or license card':k];}),S.upKind)+'</div><div class="form-grid" style="margin-top:10px">';
+      if(S.upKind==='Cert card') out+='<div><label>Which card</label><select id="up-cred"><option value="">Pick one…</option>'+['MN EMS license','NREMT card'].concat(CREDS).concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div><label>Expires</label><input id="up-exp" type="date"></div>';
+      out+='<div class="full"><label>File ('+(S.upKind==='Resume'?'PDF or Word':'PDF or photo')+', under 4 MB)</label><input id="up-file" type="file" accept="'+(S.upKind==='Resume'?'application/pdf,.doc,.docx':'application/pdf,image/*')+'"></div></div>'+
+        ((S.upKind==='W-9'||S.upKind==='Direct deposit')?'<p class="note">This goes to a locked folder only ResQ\'s payroll contact can open. It won\'t be shown in the portal after upload.</p>':'')+
         '<div style="margin-top:12px"><button class="btn" data-act="upload">Upload</button></div>';
-    } else out+='<p class="note">Uploads aren\'t switched on yet. Email your cards to '+esc(d.config.contact)+'.</p>';
-    out+='</div></div></div>';
+    } else out+='<p class="note">Uploads aren\'t switched on yet. Email your documents to '+esc(d.config.contact)+'.</p>';
+    out+='</div><div class="card"><h3>Application</h3>'+(a?'<p class="small muted">Submitted '+esc(a.submitted)+(a.updated&&a.updated!==a.submitted?', updated '+esc(a.updated):'')+'</p>':'<div class="warnbox">You haven\'t submitted an application yet. Fill this out so ResQ can approve you.</div>');
+    if(!a) out+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="appTrack" data-v="Instructor"><b>Instructor or evaluator</b></button><button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="appTrack" data-v="Patient"><b>Patient volunteer only</b></button></div>';
+    var pre=Object.assign({}, a||{}, {name:me.name, phone:me.phone, credentials:me.credentials});
+    out+=appForm('ap', pre, track, false)+'<button class="btn" data-act="saveApp" data-track="'+track+'">'+(a?'Save changes':'Submit application')+'</button></div></div>';
+    return out;
+  }
+
+  // ---------- Calendar ----------
+  function vCal(){
+    var d=S.data, me=d.me, out='<h2>Calendar</h2><p class="sub">Every block at a glance: each role shows filled / needed'+(me.isAdmin?' and who\'s on it':'')+'.</p>';
+    if(!d.courses.length) return out+'<div class="card"><p class="empty">No courses yet.</p></div>';
+    var course=d.courses.filter(function(c){return c.id===S.calCourse;})[0]||d.courses.filter(function(c){return c.id===S.course;})[0]||d.courses[0];
+    var tot={need:0,ok:0,pend:0};
+    course.sessions.forEach(function(s){ s.slots.forEach(function(sl){ if(sl.status!=='Open'||s.status!=='Open') return; tot.need+=sl.openings; tot.ok+=Math.min(sl.approved,sl.openings); tot.pend+=Math.max(0,Math.min(sl.held,sl.openings)-sl.approved); }); });
+    out+='<div class="toolbar">'+chips('calCourse', d.courses.map(function(c){return [c.id,c.name.replace('Accelerated EMT — ','EMT ')];}), course.id)+
+      '<label class="small" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600"><input type="checkbox" data-act="calGaps"'+(S.calGaps?' checked':'')+'> Only show roles with open spots</label></div>';
+    out+='<div class="grid g4" style="margin-bottom:14px"><div class="stat"><div class="n">'+tot.need+'</div><div class="l">Spots needed</div></div><div class="stat"><div class="n">'+tot.ok+'</div><div class="l">Approved</div></div>'+
+      '<div class="stat"><div class="n">'+tot.pend+'</div><div class="l">Held, pending approval</div></div><div class="stat accent"><div class="n">'+(tot.need-tot.ok-tot.pend)+'</div><div class="l">Still open</div></div></div>';
+    out+='<div class="legend"><span><span class="f full" style="padding:1px 6px;border-radius:5px">3/3</span> approved</span><span><span class="f pend" style="padding:1px 6px;border-radius:5px">3/3</span> full, some pending</span><span><span class="f gap" style="padding:1px 6px;border-radius:5px">1/3</span> open spots</span><span><span class="f over" style="padding:1px 6px;border-radius:5px">5/3</span> overstaffed</span></div>';
+    var byDay={}, order=[];
+    course.sessions.forEach(function(s){ if(!byDay[s.date]){ byDay[s.date]={}; order.push(s.date); } byDay[s.date][s.block]=s; });
+    var cell=function(s,blk){
+      if(!s) return '<td data-b="'+blk+'"><span class="small muted">No class</span></td>';
+      var rows=s.slots.filter(function(sl){ return !S.calGaps || (sl.status==='Open' && sl.held<sl.openings); }).map(function(sl){
+        var cls = sl.status!=='Open'||s.status!=='Open' ? 'off' : sl.held>sl.openings ? 'over' : sl.held<sl.openings ? 'gap' : sl.approved>=sl.openings ? 'full' : 'pend';
+        var names='';
+        if(sl.people) names=sl.people.map(function(p){ return p.status==='Approved'?'<b>'+esc(p.name)+'</b>':esc(p.name)+(p.status==='Waitlist'?' (WL)':p.status==='Drop requested'?' (drop?)':' (pending)'); }).join(', ');
+        else if(sl.mine) names='You: '+esc(sl.mine.status==='Waitlist'?'waitlist #'+sl.mine.position:sl.mine.status);
+        return '<div class="cr'+(sl.mine?' mine':'')+'"><span class="f '+cls+'">'+sl.held+'/'+sl.openings+'</span><div><span class="rl">'+esc(sl.role)+'</span> <span class="small muted">'+tm(sl.call)+'–'+tm(sl.release)+'</span>'+(names?'<div class="nm">'+names+'</div>':'')+'</div></div>';
+      }).join('');
+      return '<td data-b="'+blk+' '+tm(s.start)+'–'+tm(s.end)+'"><div class="ce">'+(rows||'<span class="small muted">All filled</span>')+'</div></td>';
+    };
+    out+='<div class="card tbl-wrap"><table class="cal"><thead><tr><th>Day</th><th>AM</th><th>PM</th></tr></thead><tbody>'+order.map(function(k){
+      var a=byDay[k].AM, p=byDay[k].PM, any=a||p, other=Object.keys(byDay[k]).filter(function(b){return b!=='AM'&&b!=='PM';});
+      return '<tr><td class="dcol">Day '+esc(any?any.day:'')+'<span>'+esc((a||p||byDay[k][other[0]]).dateText)+'</span></td>'+cell(a||byDay[k][other[0]],'AM')+cell(p,'PM')+'</tr>';
+    }).join('')+'</tbody></table></div>';
     return out;
   }
 
@@ -523,17 +657,28 @@
     if(wl.length) out+='<div class="card"><h3>Waitlists</h3><div class="list">'+wl.map(function(r){ return '<div class="row"><div><div class="t">'+esc(r.name)+' · '+esc(r.role)+' #'+r.position+'</div><div class="s">'+esc(r.dateText)+' Day '+esc(r.day)+' '+esc(r.block)+'</div></div><button class="btn ghost small" data-act="req" data-op="decline" data-id="'+esc(r.id)+'">Remove</button></div>'; }).join('')+'</div><p class="note">Waitlisted people move up on their own when a spot opens. To approve one now, add an opening in the Schedule builder.</p></div>';
     return out;
   }
+  function appSummary(i){
+    var a=i.application; if(!a) return '<p class="small" style="color:var(--ember);margin:4px 0">No application submitted yet.</p>';
+    var L=a.licenses, lic=[['MN EMS',L.mnEms,L.mnEmsExp],['NREMT',L.nremt,L.nremtExp],['AHA instructor',L.aha,L.ahaExp]].filter(function(x){return x[1];})
+      .map(function(x){ return esc(x[0])+' '+esc(x[1])+(x[2]?' (exp '+esc(x[2])+')':''); }).join(' · ');
+    var refs=a.refs.filter(function(r){return r.name;}).map(function(r){ return esc(r.name)+(r.relationship?', '+esc(r.relationship):'')+' · '+esc([r.phone,r.email].filter(Boolean).join(' · ')); }).join('<br>');
+    var rows=[['Track',a.track],['Submitted',a.submitted]];
+    if(a.track==='Instructor') rows.push(['Licenses',lic||'-',1],['Other',L.other],['Agency',a.agency+(a.years?' · '+a.years+' yrs EMS':'')],['Teaching',a.teaching],['Wants',a.rolesWanted.join(', ')],['Availability',a.availability],['References',refs||'-',1],['Address',a.address]);
+    rows.push(['Emergency',a.emergencyName+' · '+a.emergencyPhone],['Agreed',a.agreements]);
+    return '<details style="margin-top:6px"><summary class="small" style="cursor:pointer;font-weight:700;color:var(--ember)">View application</summary><dl class="appsum">'+
+      rows.filter(function(r){return r[1];}).map(function(r){ return '<dt>'+esc(r[0])+'</dt><dd>'+(r[2]?r[1]:esc(r[1]))+'</dd>'; }).join('')+'</dl></details>';
+  }
   function insCard(i, compact){
     var k=i.email, cls='rc-'+k.replace(/[^a-z0-9]/gi,'');
     var certs = i.certs.length ? i.certs.map(function(c){ return (c.link?'<a href="'+esc(c.link)+'" target="_blank" rel="noopener">'+esc(c.credential)+'</a>':esc(c.credential))+(c.expires?' <span class="muted">(exp '+esc(c.expires)+')</span>':''); }).join(' · ') : '<span class="muted">No cards uploaded</span>';
     return '<div class="ins-card"><div class="ins-top"><div><div class="t">'+esc(i.name)+' '+pill(i.status)+(i.admin?' '+pill('Open','Admin'):'')+'</div><div class="small muted">'+esc(i.email)+' · '+esc(i.phone)+' · applied '+esc(i.applied)+'</div>'+
       '<div class="small">Certifications: '+esc(i.credentials.join(', ')||'-')+'</div><div class="small">Cards: '+certs+(i.folder?' · <a href="'+esc(i.folder)+'" target="_blank" rel="noopener">Drive folder</a>':'')+'</div>'+
-      (i.about?'<div class="small muted" style="margin-top:4px">"'+esc(i.about)+'"</div>':'')+'</div>'+
+      checkChips(i.checklist)+appSummary(i)+'</div>'+
       '<div class="small" style="text-align:right">'+i.holding+' active request'+(i.holding===1?'':'s')+'<br>'+i.earnings.approved+' approved · '+money(i.earnings.owed)+' owed</div></div>'+
       '<div style="margin-top:10px"><label>Cleared for roles</label><div class="checks">'+roleChecks(cls,i.roles)+'</div></div>'+
       (compact?'':'<div style="margin-top:8px"><label>Admin notes (only admins see these)</label><input type="text" class="ed" id="note-'+cls+'" value="'+esc(i.notes)+'"></div>')+
       '<div class="row-tools" style="margin-top:10px">'+
-      (i.status!=='Approved'?'<button class="btn small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">Approve with these roles</button>':'<button class="btn small" data-act="ins" data-op="save" data-email="'+esc(k)+'" data-cls="'+cls+'">Save roles'+(compact?'':' & notes')+'</button>')+
+      (i.status!=='Approved'?'<button class="btn small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">'+(i.checklist.complete?'Approve with these roles':'Approve anyway (missing '+esc(i.checklist.missing.length)+')')+'</button>':'<button class="btn small" data-act="ins" data-op="save" data-email="'+esc(k)+'" data-cls="'+cls+'">Save roles'+(compact?'':' & notes')+'</button>')+
       (i.status==='Pending'?'<button class="btn ghost small" data-act="ins" data-op="Declined" data-email="'+esc(k)+'" data-cls="'+cls+'">Decline</button>':'')+
       (i.status==='Approved'?'<button class="btn ghost small" data-act="ins" data-op="Inactive" data-email="'+esc(k)+'" data-cls="'+cls+'">Make inactive</button>':'')+
       ((i.status==='Declined'||i.status==='Inactive')?'<button class="btn ghost small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">Reactivate</button>':'')+
@@ -559,6 +704,18 @@
     }
     var c=d.courses.filter(function(x){return x.id===S.bCourse;})[0]; if(!c) return out+'<div class="card"><p class="empty">Pick a course.</p></div>';
     out+='<div class="grid g2"><div class="card"><h3>Course details '+pill(c.status)+'</h3>'+courseForm(c)+'</div><div>';
+    var st=S.staff&&S.staff.courseId===c.id?S.staff:null;
+    out+='<div class="card"><h3>Staffing by enrollment</h3><p class="small muted">Openings follow each slot\'s staffing rule (1 per 3 students, etc.). Preview first, then apply. Nobody is removed if enrollment drops.</p>'+
+      '<div class="inline-form"><div><label>Students enrolled</label><input id="st-n" type="number" min="1" max="40" value="'+esc(st?st.students:(c.students||''))+'" style="width:90px"></div>'+
+      '<button class="btn ghost small" data-act="staffPreview">Preview</button>'+(st&&!st.applied&&st.changes.length?'<button class="btn small" data-act="staffApply">Apply '+st.changes.length+' changes</button>':'')+'</div>';
+    if(st){
+      out+= st.changes.length ? '<div class="tbl-wrap" style="margin-top:10px;max-height:280px;overflow:auto"><table><thead><tr><th>Block</th><th>Role</th><th>Openings</th><th>Held</th></tr></thead><tbody>'+st.changes.map(function(x){
+        return '<tr><td>Day '+esc(x.day)+' '+esc(x.block)+'</td><td>'+esc(x.role)+'</td><td>'+x.from+' → <b>'+x.to+'</b></td><td>'+x.held+(x.held>x.to?' <span class="f over" style="padding:1px 6px;border-radius:5px;font-size:11px">over by '+(x.held-x.to)+'</span>':'')+'</td></tr>'; }).join('')+'</tbody></table></div>'
+        : '<p class="small" style="margin-top:8px">'+(st.applied?'Done.':'No changes needed')+' for '+st.students+' students.</p>';
+      if(st.applied) out+='<p class="small" style="color:var(--ok)">Applied for '+st.students+' students.'+(st.over.length?' '+st.over.length+' slot'+(st.over.length>1?'s are':' is')+' now overstaffed; release someone in the blocks below if needed.':'')+'</p>';
+      out+='<button class="linkbtn small" data-act="staffClear">Clear preview</button>';
+    }
+    out+='</div>';
     out+='<div class="card"><h3>Set pay for a role</h3><p class="small muted">Sets the flat amount on every matching slot in this course. Fine-tune single slots below.</p><div class="inline-form">'+
       '<div><label>Role</label><select id="bp-role">'+roles.map(function(r){return '<option>'+esc(r.name)+'</option>';}).join('')+'</select></div>'+
       '<div><label>Block</label><select id="bp-block"><option>All</option><option>AM</option><option>PM</option></select></div><div><label>Pay ($)</label><input id="bp-pay" type="number" min="0" step="5" style="width:90px"></div>'+
@@ -579,12 +736,13 @@
     var id=c.id||'';
     return '<div class="form-grid"><div class="full"><label>Name</label><input id="cf-name" type="text" value="'+esc(c.name||'')+'"></div>'+
       '<div><label>Start</label><input id="cf-start" type="date" value="'+esc(c.start||'')+'"></div><div><label>End</label><input id="cf-end" type="date" value="'+esc(c.end||'')+'"></div>'+
-      '<div><label>Location</label><input id="cf-loc" type="text" value="'+esc(c.location||'')+'"></div><div><label>Students expected</label><input id="cf-stu" type="number" min="0" value="'+esc(c.students||'')+'"></div>'+
+      '<div><label>Location</label><input id="cf-loc" type="text" value="'+esc(c.location||'')+'"></div><div><label>Students enrolled</label><input type="text" value="'+esc(c.students||'-')+'" disabled title="Change this with Staffing by enrollment"></div>'+
       '<div><label>Status</label><select id="cf-status">'+['Open','Hidden','Closed'].map(function(s){return '<option'+(s===(c.status||'Hidden')?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
       '<div class="full"><label>Description (instructors see this)</label><textarea id="cf-desc">'+esc(c.description||'')+'</textarea></div></div>'+
       '<div style="margin-top:12px"><button class="btn" data-act="saveCourse" data-id="'+esc(id)+'">'+(id?'Save course':'Create course')+'</button></div>'+
       '<p class="note">Open = instructors can see it and sign up. Hidden = only admins see it. Closed = visible to admins only, sign-up off.</p>';
   }
+  function scaleOpts(cur){ var r=S.data.config.scaleRules||{}; return Object.keys(r).map(function(k){ return '<option value="'+esc(k)+'"'+(k===(cur||'')?' selected':'')+'>'+esc(r[k])+'</option>'; }).join(''); }
   function sessEditor(s){
     var roles=S.data.config.roles, need=0, held=0, pend=0;
     s.slots.forEach(function(sl){ if(sl.status==='Open'){ need+=sl.openings; held+=Math.min(sl.held,sl.openings); } (sl.people||[]).forEach(function(p){ if(p.status==='Pending') pend++; }); });
@@ -597,20 +755,20 @@
       '<div style="flex:1;min-width:160px"><label>Topic</label><input id="se-topic-'+k+'" type="text" value="'+esc(s.topic)+'" style="width:100%"></div>'+
       '<div><label>Status</label><select id="se-status-'+k+'">'+['Open','Hidden','Cancelled'].map(function(x){return '<option'+(x===s.status?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
       '<button class="btn ghost small" data-act="saveSess" data-id="'+esc(id)+'" data-k="'+k+'">Save block</button></div>';
-    h+='<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th style="min-width:150px">Role</th><th>Openings</th><th>Pay $</th><th>Call</th><th>Release</th><th style="min-width:200px">Notes</th><th>Status</th><th></th></tr></thead><tbody>';
+    h+='<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th style="min-width:150px">Role</th><th>Openings</th><th>Pay $</th><th>Call</th><th>Release</th><th style="min-width:200px">Notes</th><th>Staffing rule</th><th>Status</th><th></th></tr></thead><tbody>';
     s.slots.forEach(function(sl,i){
       var sk=k+'_'+i;
-      h+='<tr><td><b>'+esc(sl.role)+'</b><div class="people">'+(sl.people||[]).map(function(p){ return '<span class="pp">'+esc(p.name)+' '+pill(p.status,p.status==='Waitlist'?'WL':p.status)+'</span>'; }).join('')+'</div>'+
+      h+='<tr><td><b>'+esc(sl.role)+'</b>'+(sl.over?' <span class="f over" style="padding:1px 6px;border-radius:5px;font-size:11px">over by '+sl.over+'</span>':'')+'<div class="people">'+(sl.people||[]).map(function(p){ return '<span class="pp">'+esc(p.name)+' '+pill(p.status,p.status==='Waitlist'?'WL':p.status)+'</span>'; }).join('')+'</div>'+
         (S.assignFor===sl.id ? '<div class="inline-form"><select id="as-'+sk+'"><option value="">Pick an approved instructor…</option>'+ins.map(function(i){ return '<option value="'+esc(i.email)+'">'+esc(i.name)+'</option>'; }).join('')+'</select><button class="btn small" data-act="assign" data-id="'+esc(sl.id)+'" data-k="'+sk+'">Assign</button></div>' :
           '<button class="linkbtn small" data-act="assignOpen" data-id="'+esc(sl.id)+'">+ Assign someone</button>')+'</td>'+
         '<td><input class="ed" id="sl-open-'+sk+'" type="number" min="0" value="'+esc(sl.openings)+'" style="width:64px"></td><td><input class="ed" id="sl-pay-'+sk+'" type="number" min="0" step="5" value="'+esc(sl.pay)+'" style="width:80px"></td>'+
         '<td><input class="ed" id="sl-call-'+sk+'" type="text" value="'+esc(sl.call)+'" style="width:62px"></td><td><input class="ed" id="sl-rel-'+sk+'" type="text" value="'+esc(sl.release)+'" style="width:62px"></td>'+
-        '<td><input class="ed" id="sl-notes-'+sk+'" type="text" value="'+esc(sl.notes)+'"></td><td><select class="ed" id="sl-status-'+sk+'"><option'+(sl.status==='Open'?' selected':'')+'>Open</option><option'+(sl.status==='Closed'?' selected':'')+'>Closed</option></select></td>'+
+        '<td><input class="ed" id="sl-notes-'+sk+'" type="text" value="'+esc(sl.notes)+'"></td><td><select class="ed" id="sl-scale-'+sk+'" style="min-width:130px">'+scaleOpts(sl.scale)+'</select></td><td><select class="ed" id="sl-status-'+sk+'"><option'+(sl.status==='Open'?' selected':'')+'>Open</option><option'+(sl.status==='Closed'?' selected':'')+'>Closed</option></select></td>'+
         '<td><button class="btn ghost small" data-act="saveSlot" data-id="'+esc(sl.id)+'" data-k="'+sk+'">Save</button></td></tr>';
     });
     h+='<tr><td><select class="ed" id="ns-role-'+k+'">'+roles.map(function(r){return '<option>'+esc(r.name)+'</option>';}).join('')+'</select></td><td><input class="ed" id="ns-open-'+k+'" type="number" min="1" value="1" style="width:64px"></td>'+
       '<td><input class="ed" id="ns-pay-'+k+'" type="number" min="0" step="5" value="0" style="width:80px"></td><td><input class="ed" id="ns-call-'+k+'" type="text" value="'+esc(s.start)+'" style="width:62px"></td><td><input class="ed" id="ns-rel-'+k+'" type="text" value="'+esc(s.end)+'" style="width:62px"></td>'+
-      '<td><input class="ed" id="ns-notes-'+k+'" type="text" placeholder="Notes for this role"></td><td></td><td><button class="btn small" data-act="addSlot" data-id="'+esc(id)+'" data-k="'+k+'">Add slot</button></td></tr>';
+      '<td><input class="ed" id="ns-notes-'+k+'" type="text" placeholder="Notes for this role"></td><td><select class="ed" id="ns-scale-'+k+'" style="min-width:130px">'+scaleOpts('')+'</select></td><td></td><td><button class="btn small" data-act="addSlot" data-id="'+esc(id)+'" data-k="'+k+'">Add slot</button></td></tr>';
     h+='</tbody></table></div></div></details>';
     return h;
   }
@@ -688,7 +846,7 @@
     var act=b.dataset.act, id=b.dataset.id, k=b.dataset.k;
     if(b.tagName==='INPUT') return;
     if(act==='tab'){ S.tab=b.dataset.v; S.dropFor=null; render(); window.scrollTo(0,0); return; }
-    if(act==='chip'){ S[b.dataset.k]=b.dataset.v; render(); return; }
+    if(act==='chip'){ S[b.dataset.k]=b.dataset.v; if(b.dataset.k==='bCourse') S.staff=null; render(); return; }
     if(act==='retry'){ start(); return; }
     if(act==='gomine'){ S.tab='mine'; S.mineFilter='Upcoming'; render(); window.scrollTo(0,0); return; }
     if(act==='request') return run(b, authed('apiRequestSlot',id,''), function(r){ return r.status==='Waitlist'?'You\'re #'+r.position+' on the waitlist':'Held for you. Pending approval.'; });
@@ -696,12 +854,16 @@
     if(act==='dropCancel'){ S.dropFor=null; render(); return; }
     if(act==='drop'){ var reason=val('drop-reason'); S.dropFor=null; return run(b, authed('apiDrop',id,reason), function(r){ return r.status==='Dropped'?'Released':r.status==='Approved'?'You\'re keeping the slot':'Drop request sent to ResQ'; }); }
     if(act==='ics'){ var r=S.data.requests.filter(function(x){return x.id===id;})[0]; if(r) ics(r); return; }
-    if(act==='saveProfile') return run(b, authed('apiUpdateProfile',{name:val('pf-name'),phone:val('pf-phone'),about:val('pf-about'),credentials:checked('pf-cred')}),'Saved');
+    if(act==='saveApp') return run(b, authed('apiSaveApplication', readAppForm('ap', b.dataset.track)),'Application saved');
+    if(act==='appTrack'){ S.appTrack=b.dataset.v; render(); return; }
+    if(act==='track'){ S.track=b.dataset.v; $('su-form').innerHTML=appForm('su',{name:val('su-name'),email:val('su-email'),phone:val('su-phone'),emergencyName:val('su-emname'),emergencyPhone:val('su-emphone')},S.track,true); return; }
+    if(act==='staffPreview'||act==='staffApply') return run(b, authed('apiAdminStaffing',S.bCourse,val('st-n'),act==='staffApply'), function(r){ return r.applied?'Staffing updated on '+r.changes.length+' slots':(r.changes.length?r.changes.length+' slots would change':'No changes needed'); }, function(r){ S.staff=Object.assign({courseId:S.bCourse},r); });
+    if(act==='staffClear'){ S.staff=null; render(); return; }
     if(act==='upload'){
-      var f=$('up-file').files[0]; if(!val('up-cred')){ toast('Pick which certification this is.'); return; } if(!f){ toast('Pick a file first.'); return; }
+      var f=$('up-file').files[0]; if(S.upKind==='Cert card' && !val('up-cred')){ toast('Pick which card this is.'); return; } if(!f){ toast('Pick a file first.'); return; }
       if(f.size>4*1024*1024){ toast('That file is over 4 MB. Try a smaller photo or PDF.'); return; }
       var fr=new FileReader(); busy(b,true,'Uploading…');
-      fr.onload=function(){ busy(b,false); run(b, authed('apiUploadCert',{credential:val('up-cred'),expires:val('up-exp'),fileName:f.name,mime:f.type||'application/pdf',data:fr.result}),'Uploaded'); };
+      fr.onload=function(){ busy(b,false); run(b, authed('apiUploadDoc',{kind:S.upKind,credential:val('up-cred'),expires:val('up-exp'),fileName:f.name,mime:f.type||'application/pdf',data:fr.result}),'Uploaded'); };
       fr.readAsDataURL(f); return;
     }
     // admin
@@ -716,15 +878,15 @@
       return run(b, authed('apiAdminInstructor',b.dataset.email,ch), b.dataset.op==='save'?'Saved':'Account '+b.dataset.op.toLowerCase());
     }
     if(act==='saveCourse'){
-      var c={name:val('cf-name'),start:val('cf-start'),end:val('cf-end'),location:val('cf-loc'),students:val('cf-stu'),status:val('cf-status'),description:val('cf-desc')}; if(id) c.id=id;
+      var c={name:val('cf-name'),start:val('cf-start'),end:val('cf-end'),location:val('cf-loc'),status:val('cf-status'),description:val('cf-desc')}; if(id) c.id=id;
       return run(b, authed('apiAdminSaveCourse',c), id?'Course saved':'Course created', function(r){ S.bCourse=r.id; });
     }
     if(act==='bulkPay') return run(b, authed('apiAdminBulkPay',S.bCourse,val('bp-role'),val('bp-block'),val('bp-pay')), function(r){ return 'Pay set on '+r.updated+' slots'; });
     if(act==='copyCourse') return run(b, authed('apiAdminCopyCourse',S.bCourse,val('cp-name'),val('cp-start')), function(r){ return 'Copied '+r.sessions+' blocks and '+r.slots+' slots'; }, function(r){ S.bCourse=r.id; });
     if(act==='addSess') return run(b, authed('apiAdminSaveSession',{courseId:S.bCourse,day:val('ns-day'),date:val('ns-date'),block:val('ns-block'),start:val('ns-start'),end:val('ns-end'),topic:val('ns-topic')}),'Block added', function(r){ S.openSess[r.id]=true; });
     if(act==='saveSess') return run(b, authed('apiAdminSaveSession',{id:id,day:val('se-day-'+k),date:val('se-date-'+k),block:val('se-block-'+k),start:val('se-start-'+k),end:val('se-end-'+k),topic:val('se-topic-'+k),status:val('se-status-'+k)}),'Block saved');
-    if(act==='saveSlot') return run(b, authed('apiAdminSaveSlot',{id:id,openings:val('sl-open-'+k),pay:val('sl-pay-'+k),call:val('sl-call-'+k),release:val('sl-rel-'+k),notes:val('sl-notes-'+k),status:val('sl-status-'+k)}),'Slot saved');
-    if(act==='addSlot') return run(b, authed('apiAdminSaveSlot',{sessionId:id,role:val('ns-role-'+k),openings:val('ns-open-'+k),pay:val('ns-pay-'+k),call:val('ns-call-'+k),release:val('ns-rel-'+k),notes:val('ns-notes-'+k)}),'Slot added');
+    if(act==='saveSlot') return run(b, authed('apiAdminSaveSlot',{id:id,openings:val('sl-open-'+k),pay:val('sl-pay-'+k),call:val('sl-call-'+k),release:val('sl-rel-'+k),notes:val('sl-notes-'+k),status:val('sl-status-'+k),scale:val('sl-scale-'+k)}),'Slot saved');
+    if(act==='addSlot') return run(b, authed('apiAdminSaveSlot',{sessionId:id,role:val('ns-role-'+k),openings:val('ns-open-'+k),pay:val('ns-pay-'+k),call:val('ns-call-'+k),release:val('ns-rel-'+k),notes:val('ns-notes-'+k),scale:val('ns-scale-'+k)}),'Slot added');
     if(act==='assignOpen'){ S.assignFor=id; render(); return; }
     if(act==='assign'){ S.assignFor=null; return run(b, authed('apiAdminAssign',id,val('as-'+k)),'Assigned and approved'); }
     if(act==='paid') return run(b, authed('apiAdminRequest',id,'paid',val('amt-'+k)),'Marked paid');
@@ -742,6 +904,7 @@
   document.addEventListener('change', function(ev){
     var t=ev.target;
     if(t.dataset && t.dataset.act==='onlyOpen'){ S.onlyOpen=t.checked; render(); }
+    if(t.dataset && t.dataset.act==='calGaps'){ S.calGaps=t.checked; render(); }
   });
   document.addEventListener('toggle', function(ev){
     var d=ev.target; if(d.dataset && d.dataset.sess) S.openSess[d.dataset.sess]=d.open;
@@ -750,12 +913,11 @@
     if(ev.target.id==='ins-search'){ S.insSearch=ev.target.value; var pos=ev.target.selectionStart; render(); var e=$('ins-search'); if(e){ e.focus(); e.setSelectionRange(pos,pos); } }
   });
 
-  $('su-creds').innerHTML = credChecks('su-cred',[]);
   $('form-email').addEventListener('submit', sendCode);
   $('form-signup').addEventListener('submit', signup);
   $('form-code').addEventListener('submit', verify);
-  $('btn-show-signup').addEventListener('click', function(){ $('su-email').value=$('email').value; setMsg(''); step('signup'); });
-  $('btn-signup-back').addEventListener('click', function(){ setMsg(''); step('email'); });
+  $('btn-show-signup').addEventListener('click', showSignup);
+  $('btn-signup-back').addEventListener('click', function(){ $('login').querySelector('.login').classList.remove('wide'); setMsg(''); step('email'); });
   $('btn-back').addEventListener('click', function(){ setMsg(''); step('email'); });
   $('btn-resend').addEventListener('click', function(){ $('email').value=pendingEmail; step('email'); sendCode(); });
   $('btn-logout').addEventListener('click', function(){ setToken(null); S.data=null; showLogin(''); });

@@ -2,10 +2,12 @@
 
 Instructor sign-up portal for ResQ Education, served at **instructors.resqedu.com** on Netlify. Built the same way as the ambassador portal.
 
-- Instructors create an account, log in with an emailed 6-digit code, upload cert cards, and request class slots.
+- People apply through the portal (instructor/evaluator or patient-volunteer application), log in with an emailed 6-digit code, upload documents, and request class slots.
 - A request holds the slot right away as **Pending** (even before the account is approved). When a slot is full, later requests go on a **Waitlist** and move up on their own when a spot opens.
 - Pending and waitlisted requests can be released anytime. Dropping an **Approved** slot sends a drop request that an admin approves.
-- Admins approve accounts, tick which roles each person is cleared for, approve or decline slot requests, build courses, blocks and slots, set flat pay per slot, mark slots paid, and turn each email type on or off.
+- Each slot can follow enrollment (1 per 3 students, etc.). Admins change enrollment once and preview/apply the new openings for the whole course.
+- A Calendar tab shows every block with filled/needed per role.
+- Admins approve accounts (with a checklist of missing application items), tick which roles each person is cleared for, approve or decline slot requests, build courses, blocks and slots, set flat pay per slot, mark slots paid, and turn each email type on or off.
 
 ## Files
 
@@ -23,7 +25,7 @@ Instructor sign-up portal for ResQ Education, served at **instructors.resqedu.co
 
 ## Data
 
-Everything lives in the **01 ResQ Instructor Portal** Google Sheet (ResQ Admin › 02 Instructors › ResQ Instructor Portal). Tabs: Instructors, Certs, Roles, Courses, Sessions (class blocks), Slots, Requests, Settings. You can edit the sheet directly; don't rename the column headers. Cert cards upload to the **Instructor Cert Cards** folder next to it, one subfolder per instructor.
+Everything lives in the **01 ResQ Instructor Portal** Google Sheet (ResQ Admin › 02 Instructors › ResQ Instructor Portal). Tabs: Instructors, Certs (all uploaded documents), Applications, Roles, Courses, Sessions (class blocks), Slots (Scale = staffing rule), Requests, Settings, Agreements (wording instructors agree to). You can edit the sheet directly; don't rename the column headers. Cert cards upload to the **Instructor Cert Cards** folder next to it, one subfolder per instructor. W-9s and direct deposit forms go to the **Instructor Pay Forms (restricted)** folder, which has limited access; the portal never links to them.
 
 ## Netlify environment variables
 
@@ -34,6 +36,7 @@ Everything lives in the **01 ResQ Instructor Portal** Google Sheet (ResQ Admin �
 | `ADMIN_EMAILS` | recommended | Comma-separated emails that see the admin tabs. Default: admin@resqedu.com, ryan.kelly@resqedu.com, matt.shen@resqedu.com |
 | `SHEET_ID` | optional | Defaults to the 01 ResQ Instructor Portal sheet |
 | `CERT_FOLDER_ID` | optional | Defaults to the Instructor Cert Cards folder |
+| `PRIVATE_FOLDER_ID` | optional | Defaults to the Instructor Pay Forms (restricted) folder |
 | `SENDER_EMAIL` | optional | Verified Brevo sender (default marketing@resqedu.com) |
 | `REPLY_TO` | optional | Reply-to on every email (default admin@resqedu.com) |
 | `SITE_URL` | optional | Link used in emails (default https://instructors.resqedu.com) |
