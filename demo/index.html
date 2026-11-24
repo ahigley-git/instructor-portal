@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ResQ Instructor Portal</title>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1C1C1C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ResQ Instructors">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ember:#B73B35; --ember-dark:#962E29; --ember-soft:#F8E7E6; --coral:#E0706A;
+    --ink:#1C1C1C; --slate:#5E6676; --mist:#8896AE; --line:#E2E5EA; --bg:#F4F5F7; --white:#fff;
+    --ok:#2F7D55; --ok-soft:#E3F2EA; --warn:#A86A12; --warn-soft:#FBF0DC;
+    --radius:10px; --shadow:0 1px 2px rgba(28,28,28,.06),0 4px 14px rgba(28,28,28,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Archivo,Arial,Helvetica,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font:inherit;color:inherit}
+  a{color:var(--ember)}
+  .eyebrow{font-family:"Courier New",monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--mist)}
+  .hidden{display:none!important}
+
+  /* Login */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .login{width:100%;max-width:400px;background:var(--white);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .login-top{background:var(--ink);color:#fff;padding:28px 28px 24px}
+  .login-top h1{margin:8px 0 0;font-size:26px;font-weight:800;letter-spacing:-.3px}
+  .login-top h1 span{color:var(--coral)}
+  .login-body{padding:24px 28px 28px}
+  .login-body p{margin:0 0 16px;color:var(--slate)}
+  label{display:block;font-weight:600;font-size:13px;margin:0 0 6px}
+  input[type=text],input[type=email],input[type=tel],select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--ember);box-shadow:0 0 0 3px var(--ember-soft)}
+  textarea{resize:vertical;min-height:70px}
+  .code-input{font-size:28px;letter-spacing:10px;text-align:center;font-weight:700}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer;background:var(--ember);color:#fff;text-decoration:none;white-space:nowrap}
+  .btn:hover{background:var(--ember-dark)}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn.block{width:100%}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:var(--bg)}
+  .btn.small{padding:6px 11px;font-size:13px;font-weight:600}
+  .btn.dark{background:var(--ink)} .btn.dark:hover{background:#000}
+  .linkbtn{background:none;border:0;color:var(--ember);cursor:pointer;padding:0;font-weight:600}
+  .msg{font-size:14px;margin-top:12px;min-height:1px}
+  .msg.err{color:var(--ember)} .msg.ok{color:var(--ok)}
+
+  /* App shell */
+  header.bar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:5}
+  .bar-in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{font-weight:800;font-size:17px;letter-spacing:-.2px}
+  .brand span{color:var(--coral)}
+  .who{display:flex;align-items:center;gap:12px;font-size:14px;color:#C9CED8}
+  .who button{background:transparent;border:1px solid #3a3a3a;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px}
+  nav.tabs{background:var(--ink);border-top:1px solid #2b2b2b}
+  .tabs-in{max-width:1080px;margin:0 auto;padding:0 12px;display:flex;gap:2px;overflow-x:auto}
+  .tab{background:none;border:0;color:#AEB4BF;padding:12px 14px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  .tab.on{color:#fff;border-bottom-color:var(--ember)}
+  main{max-width:1080px;margin:0 auto;padding:22px 20px 60px}
+  h2{font-size:22px;margin:0 0 4px;font-weight:800;letter-spacing:-.3px}
+  h3{font-size:16px;margin:0 0 12px;font-weight:700}
+  .sub{color:var(--slate);margin:0 0 18px}
+  .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px}
+  .grid{display:grid;gap:12px}
+  .g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+  .stat{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+  .stat .n{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  .stat .l{font-size:13px;color:var(--slate)}
+  .stat.accent{border-top:3px solid var(--ember)}
+
+  .codecard{background:var(--ink);color:#fff;border-radius:12px;padding:20px 22px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+  .codecard .code{font-size:34px;font-weight:800;letter-spacing:2px;font-family:Archivo,Arial,sans-serif}
+  .codecard p{margin:4px 0 0;color:#C9CED8;font-size:14px}
+  .codecard .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .codecard .btn.ghost{color:#fff;border-color:#444} .codecard .btn.ghost:hover{background:#2a2a2a}
+
+  .pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg);color:var(--slate);white-space:nowrap}
+  .pill.Pending,.pill.Interested{background:var(--warn-soft);color:var(--warn)}
+  .pill.Owed{background:var(--ember-soft);color:var(--ember)}
+  .pill.Paid,.pill.Enrolled{background:var(--ok-soft);color:var(--ok)}
+  .pill.Contacted{background:#E7ECF5;color:#3E5B8A}
+  .pill.Notafit{background:#EEE;color:#888}
+
+  .list{display:flex;flex-direction:column}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row .t{font-weight:700}
+  .row .s{font-size:13px;color:var(--slate)}
+  .empty{color:var(--slate);font-size:14px;padding:6px 0}
+  .note{font-size:13px;color:var(--slate);margin-top:10px}
+
+  .lead{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#fff}
+  .lead-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .lead-top .t{font-weight:700;font-size:16px}
+  .lead-meta{font-size:13px;color:var(--slate);margin-top:2px}
+  .lead-edit{display:grid;grid-template-columns:180px 1fr auto;gap:10px;margin-top:12px;align-items:start}
+  @media(max-width:640px){.lead-edit{grid-template-columns:1fr}}
+  .lead-edit textarea{min-height:42px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .toolbar .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-grid .full{grid-column:1/-1}
+  @media(max-width:640px){.form-grid{grid-template-columns:1fr}}
+
+  .mat{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+  .mat:first-of-type{border-top:0}
+  .mat .ic{flex:0 0 36px;height:36px;border-radius:8px;background:var(--ember-soft);color:var(--ember);display:flex;align-items:center;justify-content:center;font-weight:800}
+  .mat .t{font-weight:700;color:var(--ink)} .mat:hover .t{color:var(--ember)}
+  .mat .s{font-size:13px;color:var(--slate)}
+  .mat.feature{background:var(--ember-soft);border:0;border-radius:10px;padding:14px;margin-bottom:6px}
+  .mat.feature .ic{background:var(--ember);color:#fff}
+
+  .update{padding:10px 0;border-top:1px solid var(--line)} .update:first-child{border-top:0}
+  .update .t{font-weight:700} .update .d{font-size:12px;color:var(--mist);font-family:"Courier New",monospace}
+  .update p{margin:4px 0 0;font-size:14px;color:#333;white-space:pre-line}
+
+  .tbl-wrap{overflow-x:auto;margin:0 -4px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:12px;color:var(--slate);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 8px;border-bottom:2px solid var(--line);white-space:nowrap}
+  td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  td select{padding:6px 8px;font-size:13px;width:auto;min-width:140px}
+  td input.amt{width:80px;padding:6px 8px;font-size:13px}
+  .alert{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;background:var(--warn-soft);color:#6b4510;margin-bottom:8px;font-size:14px;flex-wrap:wrap}
+  .alert.red{background:var(--ember-soft);color:#7a2420}
+  .progress{height:12px;background:var(--bg);border-radius:999px;position:relative;overflow:hidden;margin:10px 0 6px}
+  .progress .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ember);border-radius:999px}
+  .progress .target{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;box-shadow:var(--shadow);z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .loading{padding:60px 0;text-align:center;color:var(--slate)}
+  .spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--ember);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Instructor portal additions */
+  .pill.Approved,.pill.Paid,.pill.Open{background:var(--ok-soft);color:var(--ok)}
+  .pill.Waitlist,.pill.Upcoming{background:#E7ECF5;color:#3E5B8A}
+  .pill.Drop,.pill.Declined,.pill.Owed{background:var(--ember-soft);color:var(--ember)}
+  .pill.Dropped,.pill.Inactive,.pill.Hidden,.pill.Closed,.pill.Cancelled{background:#EEE;color:#888}
+  .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 14px;margin:4px 0 2px}
+  .checks label{display:flex;gap:8px;align-items:flex-start;font-weight:500;font-size:14px;margin:0;cursor:pointer}
+  .checks input{margin-top:3px}
+  .signup-link{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:14px;color:var(--slate)}
+  .day{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+  .day-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 18px;background:#FAFAFB;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .day-h .t{font-weight:800}
+  .day-h .s{font-size:13px;color:var(--slate)}
+  .blk{padding:10px 18px 12px;border-top:1px solid var(--line)}
+  .blk:first-of-type{border-top:0}
+  .blk-h{display:flex;gap:10px;align-items:baseline;margin-bottom:6px;flex-wrap:wrap}
+  .blk-h .b{font-family:"Courier New",monospace;font-weight:700;font-size:12px;letter-spacing:1.5px;color:#fff;background:var(--ink);padding:2px 7px;border-radius:4px}
+  .blk-h .tp{font-size:14px;color:var(--slate)}
+  .slot{display:grid;grid-template-columns:minmax(150px,1.2fr) 110px 120px minmax(120px,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:1px dashed var(--line)}
+  .slot:first-of-type{border-top:0}
+  .slot .r{font-weight:700}
+  .slot .n{font-size:12.5px;color:var(--slate);margin-top:2px}
+  .slot .tm{font-family:"Courier New",monospace;font-size:13px}
+  .slot .op{font-size:13px}
+  .slot .op b{font-size:14px}
+  .slot .act{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+  @media(max-width:760px){.slot{grid-template-columns:1fr 1fr}.slot .act{grid-column:1/-1;justify-content:flex-start}}
+  .muted{color:var(--slate)} .small{font-size:13px}
+  .warnbox{background:var(--warn-soft);color:#6b4510;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px}
+  .okbox{background:var(--ok-soft);color:#1f5a3c;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px}
+  .inline-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px}
+  .inline-form input,.inline-form select{width:auto;padding:7px 9px;font-size:13px}
+  .inline-form label{font-size:12px;margin-bottom:3px}
+  .row-tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  details.sess{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff}
+  details.sess>summary{cursor:pointer;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;list-style:none}
+  details.sess>summary::-webkit-details-marker{display:none}
+  details.sess>summary .sum-r{margin-left:auto;font-size:13px;color:var(--slate)}
+  details.sess[open]>summary{border-bottom:1px solid var(--line);background:#FAFAFB}
+  .sess-body{padding:12px 14px}
+  .ed{width:100%;padding:6px 8px!important;font-size:13px!important;border:1px solid var(--line);border-radius:6px}
+  td .ed{min-width:0}
+  .people{font-size:12.5px;color:var(--slate);margin-top:3px}
+  .people .pp{display:inline-flex;gap:4px;align-items:center;margin-right:8px}
+  .cnt{display:inline-block;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--ember);color:#fff;font-size:12px;font-weight:800;margin-left:6px;text-align:center}
+  .tab .cnt{margin-left:4px}
+  .ins-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#fff}
+  .ins-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .ins-top .t{font-weight:700;font-size:16px}
+  .demo-bar{background:var(--warn);color:#fff;text-align:center;font-size:13px;padding:6px 10px}
+  .demo-bar button{background:#fff;color:var(--warn);border:0;border-radius:5px;padding:3px 8px;font-weight:700;margin-left:8px;cursor:pointer}
+  .switch{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .switch:first-child{border-top:0}
+  .switch input{width:18px;height:18px}
+  .switch .d{font-size:13px;color:var(--slate)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--slate);margin:-6px 0 14px}
+</style>
+</head>
+<body>
+<div class="demo-bar"><span id="demo-msg">Clickable demo with sample data. Nothing is saved or emailed.</span><button onclick="__demoLogin('admin@resqedu.com')">Adam (admin)</button><button onclick="__demoLogin('sarah@example.com')">Sarah (assistant)</button><button onclick="__demoLogin('jordan@example.com')">Jordan (pending)</button><button onclick="__demoLogin('priya@example.com')">Priya (patient)</button></div>
+<div id="login" class="login-wrap hidden">
+  <div class="login">
+    <div class="login-top">
+      <div class="eyebrow">ResQ Education</div>
+      <h1>Instructor <span>Portal</span></h1>
+    </div>
+    <div class="login-body">
+      <div id="step-email">
+        <p>Log in with your email. We'll send you a 6-digit code.</p>
+        <form id="form-email">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+          <div style="height:14px"></div>
+          <button class="btn block" id="btn-send" type="submit">Send my code</button>
+        </form>
+        <div class="signup-link">New to teaching with ResQ? <button class="linkbtn" id="btn-show-signup" type="button">Create an instructor account</button></div>
+      </div>
+      <div id="step-signup" class="hidden">
+        <p>Tell us about yourself. You can hold class slots right away; ResQ reviews your account and certifications before approving them.</p>
+        <form id="form-signup">
+          <div class="form-grid">
+            <div class="full"><label for="su-name">Full name</label><input id="su-name" type="text" autocomplete="name" required></div>
+            <div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>
+            <div><label for="su-phone">Mobile phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div>
+            <div class="full"><label>Certifications you hold</label><div class="checks" id="su-creds"></div></div>
+            <div class="full"><label for="su-about">Experience (optional)</label><textarea id="su-about" placeholder="Agency, years in EMS, teaching experience, roles you're interested in"></textarea></div>
+          </div>
+          <div style="height:14px"></div>
+          <button class="btn block" id="btn-signup" type="submit">Create account and send my code</button>
+        </form>
+        <div style="margin-top:14px;font-size:14px"><button class="linkbtn" id="btn-signup-back" type="button">Back to log in</button></div>
+      </div>
+      <div id="step-code" class="hidden">
+        <p id="code-text"></p>
+        <form id="form-code">
+          <label for="code">Login code</label>
+          <input id="code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="------">
+          <div style="height:14px"></div>
+          <button class="btn block" id="btn-verify" type="submit">Log in</button>
+        </form>
+        <div style="margin-top:14px;font-size:14px;display:flex;justify-content:space-between">
+          <button class="linkbtn" id="btn-back" type="button">Use a different email</button>
+          <button class="linkbtn" id="btn-resend" type="button">Send a new code</button>
+        </div>
+      </div>
+      <div id="login-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="bar">
+    <div class="bar-in">
+      <div class="brand">ResQ <span>Instructors</span></div>
+      <div class="who"><span id="who-name"></span><button id="btn-logout" type="button">Log out</button></div>
+    </div>
+    <nav class="tabs"><div class="tabs-in" id="tabs"></div></nav>
+  </header>
+  <main id="view"><div class="loading"><div class="spinner"></div>Loading…</div></main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+(()=>{function ae(n){let l=2166136261;for(let m=0;m<n.length;m++)l^=n.charCodeAt(m),l=Math.imul(l,16777619)>>>0;return l.toString(16).padStart(8,"0")}var Le=n=>ae(n)+ae("a"+n)+ae("b"+n)+ae("c"+n)+ae("d"+n),Te=(n,l)=>Le(n+"|"+l),Ue=n=>Le(n),oe=(n,l)=>n+Math.floor(Math.random()*(l-n)),Ye=(n,l)=>String(n)===String(l),He=n=>btoa(unescape(encodeURIComponent(n))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),_e=n=>decodeURIComponent(escape(atob(n.replace(/-/g,"+").replace(/_/g,"/"))));var h={ins:"Instructors",certs:"Certs",roles:"Roles",courses:"Courses",sessions:"Sessions",slots:"Slots",reqs:"Requests",settings:"Settings"},H={Instructors:["Name","Email","Phone","Credentials","Status","Qualified roles","Cert folder","Applied","Decided","Decided by","About","Admin notes"],Certs:["Uploaded","Email","Credential","Expires","File name","Link","File ID"],Roles:["Role","Code","Description","Requirements","Open to all approved","Active","Order"],Courses:["Course ID","Course","Start","End","Location","Status","Students","Description"],Sessions:["Session ID","Course ID","Day","Date","Block","Start","End","Topic","Status"],Slots:["Slot ID","Session ID","Role","Openings","Pay ($)","Call","Release","Notes","Status"],Requests:["Request ID","Slot ID","Email","Name","Status","Requested","Updated","Decided by","Amount ($)","Paid on","Reminder sent","Note"],Settings:["Setting","Value","What it does"]},Fe=[["Primary Instructor","PRI","Leads the block: teaches every lecture and runs the day.","EMT instructor approved by ResQ (Paramedic or EMT with instructor experience).","No","Yes",1],["Assistant Instructor","AST","Runs skills stations and coaches scenarios. Counted 1 per 3 students.","At least EMT certified (current MN or NREMT).","No","Yes",2],["Patient","PAT","Plays the patient in scenarios, the MCI or the psychomotor exam.","No certification needed. Wear clothes that can get dirty.","Yes","Yes",3],["Skills Evaluator","EVAL","Evaluates NREMT psychomotor skill stations.","EMT or higher, meeting MN OEMS psychomotor evaluator requirements.","No","Yes",4],["Guest Lecturer","GL","Teaches one topic or block.","Approved by ResQ for the topic.","No","Yes",5],["Station Medic","MED","Runs one Day 10 variance station (anaphylaxis, stroke, IV, intubation, EKG, meds). Counts toward the assistant ratio.","Paramedic, or paid ResQ staff approved for the station.","No","Yes",6],["AHA BLS Instructor","BLS","Runs the AHA BLS course and skills tests on Day 1 (AHA ratio 1:6) and works as an assistant for the rest of the block.","Current AHA BLS Instructor card, aligned with ResQ's Training Center.","No","Yes",7]],nt=[["Email admins: new instructor signup","On","Admins get an email when someone signs up."],["Email admins: new slot request","On","Admins get an email when someone requests or waitlists for a slot."],["Email admins: drop request","On","Admins get an email when someone asks to drop an approved slot."],["Email instructor: account approved or declined","On","Instructor gets an email when their account status changes."],["Email instructor: slot status change","On","Instructor gets an email when a slot is approved, declined, waitlisted, moved up from the waitlist, or dropped."],["Email instructor: session reminder","On","Instructor gets a reminder before each approved slot."],["Email instructor: marked paid","On","Instructor gets an email when a slot is marked paid."],["Reminder days before session",3,"How many days before the session the reminder goes out."],["Admin alert emails","","Who gets admin alerts. Leave blank to use the admin list in Netlify."]],it=["2027-01-11","2027-01-12","2027-01-13","2027-01-14","2027-01-15","2027-01-16","2027-01-18","2027-01-19","2027-01-20","2027-01-21","2027-01-22","2027-01-23"],at=["2027-05-31","2027-06-01","2027-06-02","2027-06-03","2027-06-04","2027-06-05","2027-06-07","2027-06-08","2027-06-09","2027-06-10","2027-06-11","2027-06-12"],ot=[{am:"BLS, EMS foundations, vital signs",pm:"AHA BLS course, BLS written exam, CAM NREMT intro",pmSlots:[["BLS",2,"1300","1725","Run the AHA BLS course and skills tests 1300\u20131605 (AHA 1:6), then assist at vital signs stations."],["AST",1,"1300","1725","Assistants arrive for BLS part 1 and set up vital signs stations."]]},{am:"Transport, medical terminology, assessment foundations, life span",pm:"Lifting and moving rotations, NREMT/OEMS registration",pmSlots:[["AST",3,"1315","1630","Lifting and moving: stretcher, backboards, stair chair, MegaMover stations."]]},{am:"Medical assessment, respiratory, airway, O2/BVM demos",pm:"Pharmacology, airway and lung-sound breakouts, assessment practice",pmSlots:[["AST",3,"1415","1725","Breakouts: lung sounds and assessment walkthrough; airway skills including BVM seal."]]},{am:"Shock, cardiovascular, neurological",pm:"Allergic reactions, skills rotations, practice assessments",pmSlots:[["AST",3,"1345","1725","Skills rotations: patient assessment scenarios (STEMI), airway, med bag, CAM/stroke scale."],["PAT",3,"1345","1725","Patient for assessment scenarios (STEMI chest pain)."]]},{am:"GI/GU, renal, hematology, endocrine",pm:"Toxicology, psychiatric, medical scenarios",pmSlots:[["AST",3,"1450","1725","Medical scenarios in groups of 3; every student leads."],["PAT",3,"1450","1725","Patient for medical scenarios (hypoglycemia, opioid overdose)."]]},{am:"Sepsis, environmental, AMS, OB/GYN, neonatal",pm:"OB rotations, scenarios and IO variance",pmSlots:[["AST",3,"1300","1715","OB rotations, then septic shock, neonatal and IO/i-gel stations."],["PAT",3,"1300","1715","Patient for OB, placenta/baby problem and septic shock scenarios."]]},{am:"Trauma overview, bleeding, burns, orthopedics",pm:"Head and spine, bleeding rotations, splinting, trauma scenarios",pmSlots:[["AST",3,"1400","1725","Wound packing, bleeding control, splinting and spinal care scenarios."],["PAT",3,"1400","1725","Trauma patient (multi-system trauma with major bleeding). Moulage likely."]]},{am:"Face/neck, chest, abdominal trauma, pediatrics, geriatrics",pm:"Special challenges, rotations, auto extrication",pmSlots:[["AST",3,"1340","1640","Rotations, then auto extrication outside. Dress for the weather."],["PAT",3,"1340","1525","Patient for the pediatric respiratory distress scenario and trauma talk-through."]]},{am:"WMD, MCI scenario",pm:"Full-call simulation, NREMT skill stations",amSlots:[["AST",3,"0900","1200","MCI triage exercise. Best booked together with the afternoon."],["PAT",9,"0900","1200","MCI role player (volunteer). Moulage and acting."]],pmSlots:[["AST",3,"1300","1725","Full-call simulation, then NREMT skill sheet stations. Unpaid lunch."],["PAT",3,"1300","1500","Patient for the full-call simulation (cardiac arrest)."]]},{am:"Variance stations, exam briefing",pm:"NREMT skill stations, exam Q&A",amSlots:[["MED",6,"0800","1140","Run one variance station: anaphylaxis, stroke, IV assistance, intubation, basic EKG, or med draw-up/IM."],["PAT",2,"0800","1140","Patient for the anaphylaxis and stroke variance scenarios."]],pmSlots:[["AST",3,"1300","1630","NREMT skill sheet stations; confirm every student's 10 sim contacts are logged."]]},{am:"Mock NREMT",pm:"NREMT psychomotor exam",amSlots:[["AST",3,"0800","1200","Mock NREMT run-through of every skill station."]],pmSlots:[["AST",3,"1300","1725","Support the psychomotor exam. Unpaid lunch."],["EVAL",6,"1300","1725","NREMT psychomotor exam evaluator."],["PAT",2,"1300","1725","Psychomotor exam patient."]]},{am:"Final review, course final, graduation",pm:null}],Ee=n=>{let[l,m,g]=n.split("-").map(Number);return m+"/"+g+"/"+l};function rt(){let n=[],l=[],m=[],g=[["EMT-2027-01","Accelerated EMT \u2014 January 2027",it],["EMT-2027-06","Accelerated EMT \u2014 June 2027",at]];for(let[S,M,A]of g)n.push([S,M,Ee(A[0]),Ee(A[11]),"Cottage Grove","Open",9,"12 in-person days (Days 1\u201311 0730\u20131730, Day 12 0800\u20131200). Staffed for 9 students: 1 assistant and 1 patient per 3 students on hands-on blocks."]),ot.forEach((v,te)=>{let B=te+1,se=Ee(A[te]),G=[["AM",B===12?"0800":"0730","1200",v.am,v.amSlots||[]]];v.pm&&G.push(["PM","1300","1730",v.pm,v.pmSlots||[]]);for(let[$,ge,we,L,T]of G){let U=S+"-D"+String(B).padStart(2,"0")+"-"+$;l.push([U,S,B,se,$,ge,we,L,"Open"]),m.push([U+"-PRI",U,"Primary Instructor",1,0,ge,we,B===12?"Final review, proctor the course final, graduation.":$==="AM"?"Morning lectures and skills.":"Afternoon block.","Open"]);for(let[E,Se,ye,j,Ae]of T){let Q=Fe.find(J=>J[1]===E)[0];m.push([U+"-"+E,U,Q,Se,0,ye,j,Ae,"Open"])}}});return{courses:n,sessions:l,slots:m}}function We(){let{courses:n,sessions:l,slots:m}=rt();return{Instructors:[H.Instructors],Certs:[H.Certs],Roles:[H.Roles,...Fe],Courses:[H.Courses,...n],Sessions:[H.Sessions,...l],Slots:[H.Slots,...m],Requests:[H.Requests],Settings:[H.Settings,...nt]}}var dt=["Pending","Approved","Declined","Inactive"],lt=["Pending","Approved"],re=["Pending","Approved","Drop requested"],Pe=["EMR","EMT","AEMT","Paramedic","RN","Physician / PA / NP","AHA BLS Instructor","AHA ACLS/PALS Instructor","EMT Instructor (MN OEMS)","Psychomotor evaluator","Firefighter","Student / pre-health (patient role)","Other"],ut=30,Ve="America/Chicago",ct=56e5,R={adminSignup:"Email admins: new instructor signup",adminRequest:"Email admins: new slot request",adminDrop:"Email admins: drop request",insAccount:"Email instructor: account approved or declined",insSlot:"Email instructor: slot status change",insReminder:"Email instructor: session reminder",insPaid:"Email instructor: marked paid",reminderDays:"Reminder days before session",adminEmails:"Admin alert emails"},pe=class extends Error{constructor(l,m={}){super(l),this.session=!!m.session,this.expected=!0}},c=n=>{throw new pe(n)},de=()=>{throw new pe("Your session has ended. Log in again.",{session:!0})},C=n=>String(n!=null?n:"").trim().toLowerCase(),y=(n,l=200)=>String(n!=null?n:"").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"").trim().slice(0,l),w=n=>String(n!=null?n:"").replace(/[&<>"']/g,l=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[l]),F=n=>n===""||n===null||n===void 0,le=n=>String(n!=null?n:"").split(/[,;\n]/).map(l=>l.trim()).filter(Boolean),$e=n=>/^(y|yes|true|on|1)$/i.test(String(n!=null?n:"").trim()),Z=n=>{let l=Number(String(n!=null?n:"").replace(/[$,]/g,""));return isFinite(l)&&l>0?Math.round(l*100)/100:0},je=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});function _(n){if(F(n))return"";if(typeof n=="number"&&n>0&&n<1){let m=Math.round(n*1440);return String(Math.floor(m/60)).padStart(2,"0")+String(m%60).padStart(2,"0")}let l=String(n).replace(/[^0-9]/g,"");return l?l.padStart(4,"0").slice(-4):String(n)}var Qe=n=>n&&n.length===4?n.slice(0,2)+n.slice(2):n,Re=n=>n+Date.now().toString(36).toUpperCase()+oe(100,999),ue=n=>String(n).toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,24);function me(n){if(n instanceof Date)return n;if(typeof n=="number"&&n>2e4&&n<8e4)return new Date(Math.round((n-25569)*864e5));if(typeof n=="string"&&n.trim()){let l=n.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);if(l)return new Date(Date.UTC(+l[1],+l[2]-1,+l[3]));let m=new Date(n);if(!isNaN(m))return new Date(Date.UTC(m.getFullYear(),m.getMonth(),m.getDate(),m.getHours(),m.getMinutes()))}return null}var Ce=n=>{let l=me(n);return l?l.toISOString().slice(0,10):""},qe=n=>{let l=me(n);return l?l.getTime():0},K=n=>{let l=me(n);return l?l.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}):""},ce=n=>{let l=me(n);return l?l.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}):""},X=()=>new Date().toLocaleDateString("en-CA",{timeZone:Ve}),Me=(n,l)=>{let m=me(n);return m.setUTCDate(m.getUTCDate()+l),m.toISOString().slice(0,10)},V=n=>{let[l,m,g]=n.split("-").map(Number);return m+"/"+g+"/"+l};function x(){return new Date().toLocaleString("en-US",{timeZone:Ve,month:"numeric",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit",hour12:!1}).replace(",","")}var pt=()=>V(X());function Ge({store:n,files:l,mailer:m,kv:g,cfg:S}){function M(a){if(!a||!a.length)return[];let e=a[0].map(t=>String(t!=null?t:"").trim()),s=[];for(let t=1;t<a.length;t++){let o=a[t]||[],i={_row:t+1},d=!1;e.forEach((u,p)=>{var f;u&&(i[u]=(f=o[p])!=null?f:"",F(o[p])||(d=!0))}),d&&s.push(i)}return s}async function A(){let a=Object.values(h),e=await n.readTabs(a),s=Object.fromEntries(a.map(r=>[r,M(e[r])])),t={};for(let r of s[h.settings])r.Setting&&(t[String(r.Setting).trim()]={row:r._row,value:r.Value});let o=s[h.roles].filter(r=>r.Role).map(r=>({row:r._row,name:String(r.Role).trim(),code:String(r.Code||""),description:String(r.Description||""),requirements:String(r.Requirements||""),openToAll:$e(r["Open to all approved"]),active:F(r.Active)||$e(r.Active),order:Number(r.Order)||99})).sort((r,P)=>r.order-P.order),i=s[h.ins].filter(r=>r.Email).map(r=>({row:r._row,name:String(r.Name||""),email:C(r.Email),phone:String(r.Phone||""),credentials:le(r.Credentials),status:String(r.Status||"Pending").trim(),roles:le(r["Qualified roles"]),folder:String(r["Cert folder"]||""),applied:r.Applied,decided:r.Decided,about:String(r.About||""),notes:String(r["Admin notes"]||"")})),d=s[h.certs].filter(r=>r.Email).map(r=>({row:r._row,email:C(r.Email),credential:String(r.Credential||""),expires:r.Expires,uploaded:r.Uploaded,fileName:String(r["File name"]||""),link:String(r.Link||"")})),u=s[h.courses].filter(r=>r["Course ID"]).map(r=>({row:r._row,id:String(r["Course ID"]).trim(),name:String(r.Course||r["Course ID"]),start:Ce(r.Start),end:Ce(r.End),location:String(r.Location||""),status:String(r.Status||"Open").trim(),students:Number(r.Students)||"",description:String(r.Description||"")})),p=s[h.sessions].filter(r=>r["Session ID"]).map(r=>({row:r._row,id:String(r["Session ID"]).trim(),courseId:String(r["Course ID"]).trim(),day:Number(r.Day)||"",date:Ce(r.Date),block:String(r.Block||""),start:_(r.Start),end:_(r.End),topic:String(r.Topic||""),status:String(r.Status||"Open").trim()})).sort((r,P)=>(r.date+r.start).localeCompare(P.date+P.start)),f=s[h.slots].filter(r=>r["Slot ID"]).map(r=>({row:r._row,id:String(r["Slot ID"]).trim(),sessionId:String(r["Session ID"]).trim(),role:String(r.Role||"").trim(),openings:Math.max(0,Number(r.Openings)||0),pay:Z(r["Pay ($)"]),call:_(r.Call),release:_(r.Release),notes:String(r.Notes||""),status:String(r.Status||"Open").trim()})),I=s[h.reqs].filter(r=>r["Request ID"]).map(r=>({row:r._row,id:String(r["Request ID"]),slotId:String(r["Slot ID"]).trim(),email:C(r.Email),name:String(r.Name||""),status:String(r.Status||"Pending").trim(),requested:qe(r.Requested),updated:r.Updated,decidedBy:String(r["Decided by"]||""),amount:F(r["Amount ($)"])?null:Z(r["Amount ($)"]),paidOn:r["Paid on"],reminderSent:r["Reminder sent"],note:String(r.Note||"")})),D={settings:t,roles:o,ins:i,certs:d,courses:u,sessions:p,slots:f,reqs:I};return D.sessionById=new Map(p.map(r=>[r.id,r])),D.courseById=new Map(u.map(r=>[r.id,r])),D.slotById=new Map(f.map(r=>[r.id,r])),D}let v=(a,e,s)=>a.settings[e]&&!F(a.settings[e].value)?a.settings[e].value:s,te=(a,e)=>{let s=v(a,e,"On");return!/^(off|no|false|0)$/i.test(String(s).trim())},B=a=>{let e=le(v(a,R.adminEmails,""));return e.length?e:S.adminEmails},se=a=>S.adminEmails.map(C).includes(C(a));function G(a,e){if(!e)return null;let s=a.ins.find(o=>o.email===e)||null,t=se(e);return!t&&!(s&&lt.includes(s.status))?null:{email:e,ins:s,isAdmin:t,name:s?s.name:e}}let $=a=>Ue(S.secret+"|"+a).slice(0,40);function ge(a){let e=a+"|"+(Date.now()+ut*864e5);return He(e)+"."+Te(S.secret,e)}function we(a){(typeof a!="string"||!a.includes("."))&&de();let[e,s]=a.split("."),t;try{t=_e(e)}catch{de()}(!s||!Ye(s,Te(S.secret,t)))&&de();let[o,i]=t.split("|");return Number(i)>Date.now()||de(),o}function L(a,e){let s=G(e,we(a));return s||de(),s}function T(a,e){let s=L(a,e);return s.isAdmin||c("Admins only."),s}let U=a=>'<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1C1C1C;line-height:1.5;max-width:560px">'+a+'<p style="margin-top:20px">'+(S.siteUrl?'<a href="'+w(S.siteUrl)+'" style="color:#B73B35;font-weight:bold">Open the Instructor Portal</a><br>':"")+"ResQ Education</p></div>";async function E(a,e,s,t,o){if(e&&!te(a,e))return;let i=Array.isArray(s)?s:[s];for(let d of i)if(d)try{await m.send({to:d,subject:t,html:U(o)})}catch(u){console.error("email failed",t,u)}}async function Se(a,e){let s=String(oe(1e5,1e6));await g.set("otp:"+$(a),{code:s,tries:0,exp:Date.now()+6e5});try{await m.send({to:a,subject:"Your ResQ Instructor Portal code: "+s,html:U("<p>Hi "+w(e||"there")+',</p><p>Your login code for the ResQ Instructor Portal is:</p><p style="font-size:30px;font-weight:700;letter-spacing:6px;color:#B73B35;margin:16px 0">'+s+"</p><p>It expires in 10 minutes. If you didn't ask for it, you can ignore this email.</p>")})}catch(t){console.error("login email failed",t);let o=t&&t.brevo;if(!o)throw t;let i="Brevo returned error "+o.status+": "+o.message;throw/not verified|ip/i.test(o.message)?i+=". Check Brevo > Security > Authorized IPs.":o.status===401?i+=". Check the BREVO_API_KEY setting in Netlify.":/sender/i.test(o.message)&&(i+=". Check the sender address is verified in Brevo."),new pe("We couldn't send your login code. "+i)}}async function ye(a){let e="rl:"+$(a),s=await g.get(e);s&&s.until>Date.now()&&c("A code was just sent. Wait a minute before asking for another."),await g.set(e,{until:Date.now()+6e4})}let j=(a,e)=>a.reqs.filter(s=>s.slotId===e),Ae=(a,e)=>a.requested-e.requested||a.row-e.row,Q=(a,e)=>j(a,e).filter(s=>re.includes(s.status)).sort(Ae),J=(a,e)=>j(a,e).filter(s=>s.status==="Waitlist").sort(Ae);function ne(a,e){let s=a.sessionById.get(e.sessionId)||{},t=a.courseById.get(s.courseId)||{};return{session:s,course:t}}function z(a,e){let{session:s,course:t}=ne(a,e);return e.role+", "+(t.name||"")+" Day "+(s.day||"?")+" "+(s.block||"")+" ("+ce(s.date)+", "+Qe(e.call||s.start)+"\u2013"+Qe(e.release||s.end)+")"}let Oe=(a,e)=>e.amount!==null&&e.amount!==void 0?e.amount:(a.slotById.get(e.slotId)||{}).pay||0,Ie=(a,e,s)=>{if(!e||e.status!=="Approved")return!1;let t=a.roles.find(o=>o.name===s);return t&&t.openToAll||e.roles.includes(s)};async function O(a,e,s,t,o={}){let i={Status:s,Updated:x(),...o};t!==void 0&&(i["Decided by"]=t),await n.updateRows(h.reqs,[{row:e.row,values:i}]),e.status=s}async function ie(a,e){let s=[],t=e.openings-Q(a,e.id).length;for(let o of J(a,e.id)){if(t<=0)break;await O(a,o,"Pending"),s.push(o),t--,await E(a,R.insSlot,o.email,"You moved up: "+e.role+" is now held for you","<p>A spot opened up and your waitlist request moved up. You're now holding:</p><p><b>"+w(z(a,e))+"</b></p><p>It's pending until a ResQ admin approves it.</p>")}return s}let Xe={Pending:"is held for you and pending approval",Approved:"is approved",Declined:"was declined",Waitlist:"is on the waitlist",Dropped:"was dropped","Drop requested":"has a drop request waiting for approval"};async function Y(a,e,s,t=""){await E(a,R.insSlot,e.email,"Slot "+e.status.toLowerCase()+": "+s.role+" ("+ce((ne(a,s).session||{}).date)+")","<p>Your request for <b>"+w(z(a,s))+"</b> "+(Xe[e.status]||"is now "+w(e.status))+".</p>"+t+(e.status==="Approved"&&s.notes?"<p><b>Notes:</b> "+w(s.notes)+"</p>":""))}function et(a,e,s){let t=Q(a,e.id),o=J(a,e.id),d=(s.email?j(a,e.id).filter(p=>p.email===s.email&&(re.includes(p.status)||p.status==="Waitlist")):[])[0],u={id:e.id,role:e.role,openings:e.openings,pay:e.pay,call:e.call,release:e.release,notes:e.notes,status:e.status,held:t.length,approved:t.filter(p=>p.status!=="Pending").length,waitlist:o.length,mine:d?{id:d.id,status:d.status,position:d.status==="Waitlist"?o.findIndex(p=>p.id===d.id)+1:0}:null,qualified:Ie(a,s.ins,e.role)};return s.isAdmin&&(u.people=[...t,...o].map(p=>({id:p.id,email:p.email,name:p.name,status:p.status}))),u}function tt(a,e){let s=X();return a.courses.filter(t=>e.isAdmin||t.status==="Open").map(t=>({id:t.id,name:t.name,start:t.start,end:t.end,location:t.location,status:t.status,students:t.students,description:t.description,sessions:a.sessions.filter(o=>o.courseId===t.id&&(e.isAdmin||o.status==="Open"&&o.date>=s)).map(o=>({id:o.id,day:o.day,date:o.date,dateText:ce(o.date),block:o.block,start:o.start,end:o.end,topic:o.topic,status:o.status,past:o.date<s,slots:a.slots.filter(i=>i.sessionId===o.id&&(e.isAdmin||i.status==="Open")).map(i=>et(a,i,e))}))}))}function ve(a,e){let s=a.slotById.get(e.slotId)||{role:"(removed slot)",id:e.slotId},{session:t,course:o}=ne(a,s),i=X(),d=Oe(a,e),u=!F(e.paidOn);return{id:e.id,slotId:e.slotId,email:e.email,name:e.name,status:e.status,role:s.role,course:o.name||"",courseId:o.id||"",sessionId:t.id||"",day:t.day||"",block:t.block||"",date:t.date||"",dateText:ce(t.date),call:s.call||t.start||"",release:s.release||t.end||"",notes:s.notes||"",topic:t.topic||"",location:o.location||"",amount:d,amountSet:e.amount!==null,paid:u,paidOn:K(e.paidOn),requested:e.requested?new Date(e.requested).toISOString():"",position:e.status==="Waitlist"?J(a,e.slotId).findIndex(p=>p.id===e.id)+1:0,pay:e.status==="Approved"?u?"Paid":t.date&&t.date<i?"Owed":"Upcoming":"",past:!!(t.date&&t.date<i),note:e.note}}function Ne(a){let e={upcoming:0,owed:0,paid:0,approved:0};for(let s of a)s.status==="Approved"&&(e.approved++,s.pay==="Paid"?e.paid+=s.amount:s.pay==="Owed"?e.owed+=s.amount:e.upcoming+=s.amount);return e}let st=(a,e)=>{let s=a.reqs.filter(t=>t.email===e.email).map(t=>ve(a,t));return{name:e.name,email:e.email,phone:e.phone,credentials:e.credentials,status:e.status,roles:e.roles,folder:e.folder,applied:K(e.applied),about:e.about,notes:e.notes,admin:se(e.email),certs:a.certs.filter(t=>t.email===e.email).map(t=>({credential:t.credential,expires:K(t.expires),uploaded:K(t.uploaded),fileName:t.fileName,link:t.link})),holding:s.filter(t=>re.includes(t.status)||t.status==="Waitlist").length,earnings:Ne(s)}};function Be(a,e){let s=a.slotById.get(String(e));return s||c("That slot no longer exists. Refresh the page."),s}return{async apiRequestCode(a){a=C(a),/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a)||c("Enter a valid email address."),await ye(a);let e=await A(),s=G(e,a);return s&&await Se(a,s.ins?s.ins.name.split(" ")[0]:""),{sent:!0,unknown:!e.ins.find(o=>o.email===a)&&!se(a)}},async apiSignup(a){a=a||{};let e=C(y(a.email,120)),s=y(a.name,80),t=y(a.phone,30),o=y(a.about,1e3);(!s||s.split(/\s+/).length<2)&&c("Add your first and last name."),/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)||c("Enter a valid email address."),t||c("Add a phone number so we can reach you on class days.");let i=(Array.isArray(a.credentials)?a.credentials:[]).map(p=>y(p,60)).filter(p=>Pe.includes(p));i.length||c('Pick at least one certification (pick "Other" and explain below if none fit).');let d=await A(),u=d.ins.find(p=>p.email===e);return u&&["Declined","Inactive"].includes(u.status)&&c("This email already has an account that isn't active. Contact ResQ to reopen it."),await ye(e),u||(await n.appendRows(h.ins,[{Name:s,Email:e,Phone:t,Credentials:i.join(", "),Status:"Pending",Applied:x(),About:o}]),d.ins.push({email:e,name:s,status:"Pending",roles:[],credentials:i}),await E(d,R.adminSignup,B(d),"New instructor signup: "+s,"<p><b>"+w(s)+"</b> signed up for the Instructor Portal.</p><p>Email: "+w(e)+"<br>Phone: "+w(t)+"<br>Certifications: "+w(i.join(", "))+"<br>About: "+w(o||"-")+"</p><p>Approve them and tick their roles in the Admin view.</p>")),await Se(e,s.split(" ")[0]),{sent:!0,existing:!!u}},async apiVerifyCode(a,e){a=C(a),e=String(e!=null?e:"").replace(/\D/g,"");let s="otp:"+$(a),t=await g.get(s);return(!t||t.exp<Date.now())&&c("That code has expired. Ask for a new one."),t.code!==e&&(t.tries++,t.tries>=5&&(await g.del(s),c("Too many tries. Ask for a new code.")),await g.set(s,t),c("That code isn't right. Check the email and try again.")),await g.del(s),G(await A(),a)||c("This email doesn't have portal access."),{token:ge(a)}},async apiGetData(a){let e=await A(),s=L(a,e),t=e.reqs.filter(i=>i.email===s.email).map(i=>ve(e,i)).sort((i,d)=>(i.date+i.call).localeCompare(d.date+d.call)),o={me:{email:s.email,name:s.name,isAdmin:s.isAdmin,isInstructor:!!s.ins,status:s.ins?s.ins.status:"",phone:s.ins?s.ins.phone:"",credentials:s.ins?s.ins.credentials:[],roles:s.ins?s.ins.roles:[],about:s.ins?s.ins.about:""},config:{credentials:Pe,contact:S.replyTo,uploads:!!(l&&S.certFolderId),today:X(),roles:e.roles.filter(i=>i.active||s.isAdmin).map(i=>({name:i.name,description:i.description,requirements:i.requirements,openToAll:i.openToAll,active:i.active,order:i.order}))},courses:tt(e,s),requests:t,earnings:Ne(t),certs:e.certs.filter(i=>i.email===s.email).map(i=>({credential:i.credential,expires:K(i.expires),uploaded:K(i.uploaded),fileName:i.fileName}))};return s.isAdmin&&(o.admin={instructors:e.ins.map(i=>st(e,i)),requests:e.reqs.map(i=>ve(e,i)).sort((i,d)=>(i.date+i.call).localeCompare(d.date+d.call)),settings:Object.entries(e.settings).map(([i,d])=>({key:i,value:d.value})),sheetUrl:n.url,certFolderId:S.certFolderId||""}),o},async apiUpdateProfile(a,e){let s=await A(),t=L(a,s);t.ins||c("Your email isn't on the instructor list. Sign up first."),e=e||{};let o={};if(e.name!==void 0){let i=y(e.name,80);i||c("Name can't be blank."),o.Name=i}return e.phone!==void 0&&(o.Phone=y(e.phone,30)),e.about!==void 0&&(o.About=y(e.about,1e3)),Array.isArray(e.credentials)&&(o.Credentials=e.credentials.filter(i=>Pe.includes(i)).join(", ")),await n.updateRows(h.ins,[{row:t.ins.row,values:o}]),{updated:!0}},async apiRequestSlot(a,e,s){let t=await A(),o=L(a,t);o.ins||c("Sign up as an instructor first. Admin-only accounts can't hold slots.");let i=Be(t,e),{session:d,course:u}=ne(t,i);(i.status!=="Open"||d.status!=="Open"||u.status!=="Open")&&c("This slot isn't open for sign-up."),d.date<X()&&c("This session has already happened.");let p=k=>re.includes(k.status)||k.status==="Waitlist";j(t,i.id).some(k=>k.email===o.email&&p(k))&&c("You already requested this slot.");let f=t.reqs.find(k=>k.email===o.email&&p(k)&&k.slotId!==i.id&&(t.slotById.get(k.slotId)||{}).sessionId===d.id);f&&c("You already have a slot in this block ("+(t.slotById.get(f.slotId)||{}).role+"). Drop it first to switch roles.");let I=Q(t,i.id).length>=i.openings,D=I?"Waitlist":"Pending",r=Re("R"),P=x();await n.appendRows(h.reqs,[{"Request ID":r,"Slot ID":i.id,Email:o.email,Name:o.ins.name,Status:D,Requested:P,Updated:P,Note:y(s,300)}]);let b={id:r,slotId:i.id,email:o.email,name:o.ins.name,status:D,requested:Date.now(),row:0,amount:null};t.reqs.push(b);let De=I?J(t,i.id).length:0;return await Y(t,b,i,I?"<p>You're #"+De+" on the waitlist. If a spot opens, it's held for you automatically and we'll email you.</p>":o.ins.status!=="Approved"?"<p>Your instructor account is still being reviewed. The slot stays held for you while we review it.</p>":""),await E(t,R.adminRequest,B(t),(I?"Waitlist: ":"Slot request: ")+o.ins.name+", "+i.role,"<p><b>"+w(o.ins.name)+"</b> ("+w(o.email)+") "+(I?"joined the waitlist for":"requested")+":</p><p>"+w(z(t,i))+"</p><p>Account: "+w(o.ins.status)+(Ie(t,o.ins,i.role)?"":" (not yet marked qualified for "+w(i.role)+")")+"</p>"+(s?"<p>Note: "+w(y(s,300))+"</p>":"")),{status:D,position:De,id:r}},async apiDrop(a,e,s){let t=await A(),o=L(a,t),i=t.reqs.find(u=>u.id===e);(!i||i.email!==o.email)&&c("That request wasn't found. Refresh the page.");let d=t.slotById.get(i.slotId)||{id:i.slotId,role:"slot",notes:""};if(i.status==="Pending"||i.status==="Waitlist")return await O(t,i,"Dropped",void 0,s?{Note:y(s,300)}:{}),await Y(t,i,d),d.openings!==void 0&&await ie(t,d),{status:"Dropped"};if(i.status==="Approved")return F(i.paidOn)||c("This slot was already paid. Contact ResQ to change it."),await O(t,i,"Drop requested",void 0,s?{Note:y(s,300)}:{}),await Y(t,i,d,"<p>You're still on the schedule until an admin approves the drop.</p>"),await E(t,R.adminDrop,B(t),"Drop request: "+i.name+", "+d.role,"<p><b>"+w(i.name)+"</b> asked to drop an approved slot:</p><p>"+w(z(t,d))+"</p><p>Reason: "+w(y(s,300)||"-")+"</p>"),{status:"Drop requested"};if(i.status==="Drop requested")return await O(t,i,"Approved"),{status:"Approved"};c("This request can't be dropped.")},async apiUploadCert(a,e){let s=await A(),t=L(a,s);t.ins||c("Sign up as an instructor first."),(!l||!S.certFolderId)&&c("Cert uploads aren't set up yet. Email your cert to "+(S.replyTo||"ResQ")+" for now."),e=e||{};let o=y(e.credential,60)||"Certification",i=String(e.data||"").replace(/^data:[^,]*,/,"");i||c("Pick a file to upload."),i.length>ct&&c("That file is too big. Upload a file under 4 MB (a phone photo or PDF works).");let d=/^(application\/pdf|image\/(png|jpeg|heic|heif|webp))$/.test(e.mime)?e.mime:c("Upload a PDF or a photo (JPG, PNG, HEIC)."),u=y(e.fileName,120).split(".").pop().toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,5)||"pdf",p=(t.ins.folder.match(/folders\/([A-Za-z0-9_-]+)/)||[])[1];if(!p){let r=await l.ensureFolder(S.certFolderId,t.ins.name+" ("+t.email+")");p=r.id,await n.updateRows(h.ins,[{row:t.ins.row,values:{"Cert folder":r.url}}])}let f=/^\d{4}-\d{2}-\d{2}$/.test(String(e.expires||""))?V(e.expires):"",I=o+(f?" exp "+e.expires:"")+" - "+t.ins.name+"."+u,D=await l.upload({folderId:p,name:I,mime:d,base64:i});return await n.appendRows(h.certs,[{Uploaded:x(),Email:t.email,Credential:o,Expires:f,"File name":I,Link:D.url,"File ID":D.id}]),{uploaded:!0,fileName:I}},async apiAdminInstructor(a,e,s){let t=await A(),o=T(a,t);s=s||{};let i=t.ins.find(p=>p.email===C(e));i||c("Instructor not found. Refresh the page.");let d={};if(s.roles!==void 0){let p=t.roles.map(f=>f.name);d["Qualified roles"]=(Array.isArray(s.roles)?s.roles:[]).filter(f=>p.includes(f)).join(", ")}s.notes!==void 0&&(d["Admin notes"]=y(s.notes,1e3)),s.phone!==void 0&&(d.Phone=y(s.phone,30));let u=s.status!==void 0&&s.status!==i.status;if(s.status!==void 0&&(dt.includes(s.status)||c("Unknown account status."),d.Status=s.status,u&&(d.Decided=x(),d["Decided by"]=o.email)),await n.updateRows(h.ins,[{row:i.row,values:d}]),u){if(i.status=s.status,s.status==="Approved"){let p=d["Qualified roles"]!==void 0?le(d["Qualified roles"]):i.roles;await E(t,R.insAccount,i.email,"You're approved to teach with ResQ Education","<p>Hi "+w(i.name.split(" ")[0])+",</p><p>Your ResQ Instructor Portal account is approved."+(p.length?" You're cleared for: <b>"+w(p.join(", "))+"</b>.":"")+"</p><p>Any slots you're holding will be reviewed next. You can also request more slots now.</p>")}else if(s.status==="Declined"||s.status==="Inactive"){for(let p of t.reqs.filter(f=>f.email===i.email&&(f.status==="Pending"||f.status==="Waitlist"))){await O(t,p,"Declined",o.email);let f=t.slotById.get(p.slotId);f&&await ie(t,f)}await E(t,R.insAccount,i.email,"Your ResQ Instructor Portal account","<p>Hi "+w(i.name.split(" ")[0])+",</p><p>Your Instructor Portal account is now <b>"+w(s.status.toLowerCase())+"</b>, and any slots you were holding were released. If you have questions, reply to this email.</p>")}}return{updated:!0}},async apiAdminRequest(a,e,s,t){let o=await A(),i=T(a,o),d=o.reqs.find(f=>f.id===e);d||c("That request wasn't found. Refresh the page.");let u=o.slotById.get(d.slotId);u||c("That slot no longer exists.");let p=o.ins.find(f=>f.email===d.email);if(s==="approve")["Pending","Waitlist"].includes(d.status)||c("Only pending or waitlisted requests can be approved."),(!p||p.status!=="Approved")&&c("Approve "+d.name+"'s instructor account first (Instructors tab)."),Ie(o,p,u.role)||c(d.name+" isn't marked qualified for "+u.role+". Tick the role on their account first."),d.status==="Waitlist"&&Q(o,u.id).length>=u.openings&&c("This slot is full. Add an opening or decline someone first."),await O(o,d,"Approved",i.email),await Y(o,d,u);else if(s==="decline")["Pending","Waitlist","Approved","Drop requested"].includes(d.status)||c("This request is already closed."),await O(o,d,"Declined",i.email),await Y(o,d,u),await ie(o,u);else if(s==="approveDrop")d.status!=="Drop requested"&&c("There's no drop request on this slot."),await O(o,d,"Dropped",i.email),await Y(o,d,u,"<p>Your drop request was approved. Thanks for letting us know.</p>"),await ie(o,u);else if(s==="denyDrop")d.status!=="Drop requested"&&c("There's no drop request on this slot."),await O(o,d,"Approved",i.email),await Y(o,d,u,"<p>Your drop request wasn't approved, so you're still on the schedule. Reply to this email if you need to talk it through.</p>");else if(s==="paid"){d.status!=="Approved"&&c("Only approved slots can be marked paid.");let f=t==null||t===""?Oe(o,d):Z(t);await n.updateRows(h.reqs,[{row:d.row,values:{"Paid on":pt(),"Amount ($)":f,Updated:x()}}]),await E(o,R.insPaid,d.email,"Payment sent: "+je(f)+" for "+u.role,"<p>Hi "+w(d.name.split(" ")[0])+",</p><p>We marked your slot as paid: <b>"+je(f)+"</b> for "+w(z(o,u))+".</p><p>Thank you for teaching with ResQ.</p>")}else s==="unpaid"?await n.updateRows(h.reqs,[{row:d.row,values:{"Paid on":"",Updated:x()}}]):s==="amount"?await n.updateRows(h.reqs,[{row:d.row,values:{"Amount ($)":t===""||t===null?"":Z(t),Updated:x()}}]):c("Unknown action.");return{updated:!0}},async apiAdminAssign(a,e,s){let t=await A(),o=T(a,t),i=Be(t,e),d=t.ins.find(f=>f.email===C(s));d||c("Pick an instructor from the list."),d.status!=="Approved"&&c(d.name+"'s account isn't approved yet."),Ie(t,d,i.role)||c(d.name+" isn't marked qualified for "+i.role+"."),j(t,i.id).some(f=>f.email===d.email&&(re.includes(f.status)||f.status==="Waitlist"))&&c(d.name+" is already on this slot."),Q(t,i.id).length>=i.openings&&c("This slot is full. Add an opening first.");let u=x(),p={id:Re("R"),slotId:i.id,email:d.email,name:d.name,status:"Approved",amount:null};return await n.appendRows(h.reqs,[{"Request ID":p.id,"Slot ID":i.id,Email:d.email,Name:d.name,Status:"Approved",Requested:u,Updated:u,"Decided by":o.email,Note:"Assigned by admin"}]),t.reqs.push(p),await Y(t,p,i,"<p>A ResQ admin put you on this slot.</p>"),{assigned:!0}},async apiAdminSaveCourse(a,e){let s=await A();T(a,s),e=e||{};let t=u=>/^\d{4}-\d{2}-\d{2}$/.test(String(u||""))?V(u):"",o={};e.name!==void 0&&(o.Course=y(e.name,120)),e.start!==void 0&&(o.Start=t(e.start)),e.end!==void 0&&(o.End=t(e.end)),e.location!==void 0&&(o.Location=y(e.location,120)),e.status!==void 0&&(["Open","Hidden","Closed"].includes(e.status)||c("Unknown course status."),o.Status=e.status),e.students!==void 0&&(o.Students=e.students===""?"":Math.max(0,Math.round(Number(e.students)||0))),e.description!==void 0&&(o.Description=y(e.description,1e3));let i=e.id&&s.courseById.get(e.id);if(i)return await n.updateRows(h.courses,[{row:i.row,values:o}]),{id:i.id};o.Course||c("Give the course a name.");let d=ue(o.Course)||"COURSE";for(;s.courseById.has(d);)d=ue(o.Course).slice(0,18)+"-"+oe(100,999);return await n.appendRows(h.courses,[{"Course ID":d,Status:"Hidden",...o}]),{id:d}},async apiAdminSaveSession(a,e){let s=await A();T(a,s),e=e||{};let t={};e.day!==void 0&&(t.Day=e.day===""?"":Math.round(Number(e.day)||0)),e.date!==void 0&&(/^\d{4}-\d{2}-\d{2}$/.test(String(e.date))||c("Pick a date."),t.Date=V(e.date)),e.block!==void 0&&(t.Block=y(e.block,20)),e.start!==void 0&&(t.Start=_(e.start)),e.end!==void 0&&(t.End=_(e.end)),e.topic!==void 0&&(t.Topic=y(e.topic,200)),e.status!==void 0&&(["Open","Hidden","Cancelled"].includes(e.status)||c("Unknown session status."),t.Status=e.status);let o=e.id&&s.sessionById.get(e.id);if(o)return await n.updateRows(h.sessions,[{row:o.row,values:t}]),{id:o.id};s.courseById.has(e.courseId)||c("Pick a course."),t.Date||c("Pick a date.");let i=e.courseId+"-"+Re("S");return await n.appendRows(h.sessions,[{"Session ID":i,"Course ID":e.courseId,Status:"Open",...t}]),{id:i}},async apiAdminSaveSlot(a,e){let s=await A();T(a,s),e=e||{};let t={};e.role!==void 0&&(s.roles.some(u=>u.name===e.role)||c("Pick a role."),t.Role=e.role),e.openings!==void 0&&(t.Openings=Math.max(0,Math.min(50,Math.round(Number(e.openings)||0)))),e.pay!==void 0&&(t["Pay ($)"]=Z(e.pay)),e.call!==void 0&&(t.Call=_(e.call)),e.release!==void 0&&(t.Release=_(e.release)),e.notes!==void 0&&(t.Notes=y(e.notes,500)),e.status!==void 0&&(["Open","Closed"].includes(e.status)||c("Unknown slot status."),t.Status=e.status);let o=e.id&&s.slotById.get(e.id);if(o)return await n.updateRows(h.slots,[{row:o.row,values:t}]),t.Openings!==void 0&&t.Openings>o.openings&&(o.openings=t.Openings,await ie(s,o)),{id:o.id};let i=s.sessionById.get(e.sessionId);i||c("Pick a session."),t.Role||c("Pick a role.");let d=e.sessionId+"-"+Re("X");return await n.appendRows(h.slots,[{"Slot ID":d,"Session ID":i.id,Openings:1,"Pay ($)":0,Status:"Open",Call:i.start,Release:i.end,...t}]),{id:d}},async apiAdminBulkPay(a,e,s,t,o){let i=await A();T(a,i),i.courseById.has(e)||c("Pick a course.");let d=Z(o),u=i.slots.filter(p=>{let f=i.sessionById.get(p.sessionId);return f&&f.courseId===e&&p.role===s&&(!t||t==="All"||f.block===t)});return u.length||c("No "+s+" slots match in this course."),await n.updateRows(h.slots,u.map(p=>({row:p.row,values:{"Pay ($)":d}}))),{updated:u.length}},async apiAdminCopyCourse(a,e,s,t){let o=await A();T(a,o);let i=o.courseById.get(e);i||c("Pick a course to copy."),/^\d{4}-\d{2}-\d{2}$/.test(String(t||""))||c("Pick the new Day 1 date."),s=y(s,120)||i.name+" (copy)";let d=o.sessions.filter(r=>r.courseId===i.id),u=i.start||(d[0]||{}).date;u||c("The source course has no start date.");let p=Math.round((qe(t)-qe(u))/864e5),f=ue(s)||"COURSE";for(;o.courseById.has(f);)f=ue(s).slice(0,18)+"-"+oe(100,999);await n.appendRows(h.courses,[{"Course ID":f,Course:s,Start:V(t),End:i.end?V(Me(i.end,p)):"",Location:i.location,Status:"Hidden",Students:i.students,Description:i.description}]);let I=[],D=[];for(let r of d){let P=r.id.startsWith(i.id)?f+r.id.slice(i.id.length):f+"-"+r.id;I.push({"Session ID":P,"Course ID":f,Day:r.day,Date:V(Me(r.date,p)),Block:r.block,Start:r.start,End:r.end,Topic:r.topic,Status:r.status});for(let b of o.slots.filter(De=>De.sessionId===r.id))D.push({"Slot ID":b.id.startsWith(r.id)?P+b.id.slice(r.id.length):P+"-"+b.id,"Session ID":P,Role:b.role,Openings:b.openings,"Pay ($)":b.pay,Call:b.call,Release:b.release,Notes:b.notes,Status:b.status})}return I.length&&await n.appendRows(h.sessions,I),D.length&&await n.appendRows(h.slots,D),{id:f,sessions:I.length,slots:D.length}},async apiAdminSaveRole(a,e){let s=await A();T(a,s),e=e||{};let t={};e.description!==void 0&&(t.Description=y(e.description,300)),e.requirements!==void 0&&(t.Requirements=y(e.requirements,300)),e.openToAll!==void 0&&(t["Open to all approved"]=e.openToAll?"Yes":"No"),e.active!==void 0&&(t.Active=e.active?"Yes":"No"),e.order!==void 0&&(t.Order=Number(e.order)||99);let o=s.roles.find(d=>d.name===e.original);if(o)return await n.updateRows(h.roles,[{row:o.row,values:t}]),{updated:!0};let i=y(e.name,60);return i||c("Name the role."),s.roles.some(d=>d.name.toLowerCase()===i.toLowerCase())&&c("That role already exists."),await n.appendRows(h.roles,[{Role:i,Code:ue(i).slice(0,6),Active:"Yes","Open to all approved":"No",Order:s.roles.length+1,...t}]),{added:!0}},async apiAdminSettings(a,e){let s=await A();T(a,s);let t=[],o=[];for(let[i,d]of Object.entries(e||{})){if(!Object.values(R).includes(i))continue;let u=i===R.reminderDays?Math.max(0,Math.min(30,Math.round(Number(d)||0))):i===R.adminEmails?le(d).map(C).join(", "):d===!0||d==="On"?"On":"Off";s.settings[i]?t.push({row:s.settings[i].row,values:{Value:u}}):o.push({Setting:i,Value:u})}return t.length&&await n.updateRows(h.settings,t),o.length&&await n.appendRows(h.settings,o),{updated:t.length+o.length}},async runReminders(){let a=await A();if(!te(a,R.insReminder))return{sent:0};let e=Number(v(a,R.reminderDays,3))||0,s=X(),t=Me(s,e),o=0;for(let i of a.reqs){if(i.status!=="Approved"||!F(i.reminderSent))continue;let d=a.slotById.get(i.slotId);if(!d)continue;let{session:u,course:p}=ne(a,d);!u.date||u.date<s||u.date>t||(await E(a,null,i.email,"Reminder: "+d.role+" on "+ce(u.date),"<p>Hi "+w(i.name.split(" ")[0])+",</p><p>You're on the schedule for <b>"+w(z(a,d))+"</b>"+(p.location?" at "+w(p.location):"")+".</p>"+(u.topic?"<p>Topic: "+w(u.topic)+"</p>":"")+(d.notes?"<p><b>Notes:</b> "+w(d.notes)+"</p>":"")+"<p>If something has come up, log in and request a drop as soon as you can.</p>"),await n.updateRows(h.reqs,[{row:i.row,values:{"Reminder sent":x()}}]),o++)}return{sent:o}}}}var mt=/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{1,2}):(\d{2}))?$/,ee=n=>{let l=String(n).match(mt);return l?Date.UTC(+l[3],+l[1]-1,+l[2],+(l[4]||0),+(l[5]||0))/864e5+25569:n},q=We();for(let n of Object.values(q))for(let l=1;l<n.length;l++)n[l]=n[l].map(ee);var fe=n=>q[n][0],ft={url:"#demo-sheet",async readTabs(n){let l={};for(let m of n)l[m]=JSON.parse(JSON.stringify(q[m]||[]));return l},async updateRows(n,l){for(let m of l)for(let[g,S]of Object.entries(m.values)){let M=fe(n).indexOf(g);for(;q[n].length<m.row;)q[n].push([]);q[n][m.row-1][M]=ee(S)}},async appendRows(n,l){for(let m of l)q[n].push(fe(n).map(g=>m[g]===void 0?"":ee(m[g])))}},W=new Map,ht={get:async n=>W.has(n)?JSON.parse(JSON.stringify(W.get(n))):null,set:async(n,l)=>{W.set(n,l)},del:async n=>{W.delete(n)}},xe=[],gt={async send(n){xe.push(n)}},be=0,wt={async ensureFolder(){return be++,{id:"demo"+be,url:"#demo-folder"}},async upload(){return be++,{id:"f"+be,url:"#demo-file"}}},ke=Ge({store:ft,files:wt,mailer:gt,kv:ht,cfg:{secret:"demo",adminEmails:["admin@resqedu.com","ryan.kelly@resqedu.com","matt.shen@resqedu.com"],replyTo:"admin@resqedu.com",certFolderId:"demo",siteUrl:""}}),Ze="11/20/2026 9:00",he=(n,l,m,g,S,M)=>q.Instructors.push(fe("Instructors").map(A=>{var v;return(v={Name:n,Email:l,Phone:"651-555-01"+String(q.Instructors.length).padStart(2,"0"),Credentials:m,Status:g,"Qualified roles":S,Applied:ee(Ze),About:M||""}[A])!=null?v:""}));he("Adam Higley","admin@resqedu.com","Paramedic, EMT Instructor (MN OEMS), AHA BLS Instructor","Approved","Primary Instructor, Assistant Instructor, Skills Evaluator, AHA BLS Instructor");he("Matt Shen","matt.shen@resqedu.com","Paramedic, EMT Instructor (MN OEMS)","Approved","Primary Instructor, Assistant Instructor, Station Medic");he("Sarah Lund","sarah@example.com","EMT, AHA BLS Instructor","Approved","Assistant Instructor, AHA BLS Instructor","EMT with Lake Johanna FD, 4 years.");he("Jordan Ruiz","jordan@example.com","Paramedic, Psychomotor evaluator","Pending","","Paramedic at a metro service, wants evaluator and station medic slots.");he("Priya Nair","priya@example.com","Student / pre-health (patient role)","Approved","","Pre-med at St. Thomas.");var Je=0,N=(n,l,m,g)=>q.Requests.push(fe("Requests").map(S=>{var M;return(M={"Request ID":"RDEMO"+ ++Je,"Slot ID":n,Email:l,Name:m,Status:g,Requested:ee("11/2"+Je+"/2026 10:00"),Updated:ee(Ze)}[S])!=null?M:""}));N("EMT-2027-01-D01-AM-PRI","admin@resqedu.com","Adam Higley","Approved");N("EMT-2027-01-D01-PM-PRI","admin@resqedu.com","Adam Higley","Approved");N("EMT-2027-01-D02-AM-PRI","matt.shen@resqedu.com","Matt Shen","Approved");N("EMT-2027-01-D01-PM-BLS","sarah@example.com","Sarah Lund","Approved");N("EMT-2027-01-D03-PM-AST","sarah@example.com","Sarah Lund","Pending");N("EMT-2027-01-D11-PM-EVAL","jordan@example.com","Jordan Ruiz","Pending");N("EMT-2027-01-D10-AM-MED","jordan@example.com","Jordan Ruiz","Pending");N("EMT-2027-01-D04-PM-PAT","priya@example.com","Priya Nair","Pending");N("EMT-2027-01-D02-AM-PRI","sarah@example.com","Sarah Lund","Waitlist");var ze=fe("Slots").indexOf("Pay ($)");for(let n of q.Slots.slice(1))n[2]==="Assistant Instructor"&&(n[ze]=100),n[2]==="AHA BLS Instructor"&&(n[ze]=130);var Ke=()=>document.getElementById("demo-msg");window.__DEMO_API=async(n,l)=>{try{let m=await ke[n](...l);if(n==="apiRequestCode"||n==="apiSignup"){let g=[...xe].reverse().find(S=>/code: \d{6}/.test(S.subject));g&&(Ke().textContent="Demo: your login code is "+/code: (\d{6})/.exec(g.subject)[1]+" (in real life it arrives by email).");for(let S of[...W.keys()])S.startsWith("rl:")&&W.delete(S)}return JSON.parse(JSON.stringify(m!=null?m:null))}catch(m){let g=new Error(m.message);throw g.session=m.session,g}};window.__demoLogin=async n=>{for(let g of[...W.keys()])g.startsWith("rl:")&&W.delete(g);await ke.apiRequestCode(n);let l=[...xe].reverse().find(g=>g.to===n&&/code: \d{6}/.test(g.subject)),{token:m}=await ke.apiVerifyCode(n,/code: (\d{6})/.exec(l.subject)[1]);window.__portalLogin(m),Ke().textContent="Demo: logged in as "+n+". Nothing here is saved or emailed."};window.addEventListener("DOMContentLoaded",()=>window.__portalStart&&window.__portalStart());})();
+
+
+(function(){
+  'use strict';
+  var TOKEN_KEY = 'resq_ins_demo_token';
+  var memToken = null;
+  var CREDS = ['EMR','EMT','AEMT','Paramedic','RN','Physician / PA / NP','AHA BLS Instructor','AHA ACLS/PALS Instructor','EMT Instructor (MN OEMS)','Psychomotor evaluator','Firefighter','Student / pre-health (patient role)','Other'];
+  var S = { data:null, tab:'slots', course:null, role:'All', onlyOpen:false, mineFilter:'Upcoming', payFilter:'Owed', payCourse:'All',
+    bCourse:null, openSess:{}, insSearch:'', insFilter:'All', dropFor:null, assignFor:null, insOpen:{} };
+
+  function getToken(){ try{ return localStorage.getItem(TOKEN_KEY) || memToken; }catch(e){ return memToken; } }
+  function setToken(t){ memToken = t; try{ if(t) localStorage.setItem(TOKEN_KEY,t); else localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+
+  function api(fn){
+    var args = Array.prototype.slice.call(arguments,1);
+    if (window.__DEMO_API) return window.__DEMO_API(fn,args);
+    return fetch('/api/'+fn,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({args:args})})
+      .then(function(r){ return r.json().catch(function(){ return {ok:false,error:'Connection problem. Try again.'}; }); },
+            function(){ return {ok:false,error:'Connection problem. Check your internet and try again.'}; })
+      .then(function(res){
+        if(res && res.ok) return res.data;
+        var err = new Error(res && res.error || 'Something went wrong.'); err.session = res && res.session; throw err;
+      });
+  }
+  function authed(fn){
+    var args = Array.prototype.slice.call(arguments,1);
+    return api.apply(null,[fn,getToken()].concat(args)).catch(function(e){
+      if(e.session){ setToken(null); showLogin('Your session ended. Log in again.'); }
+      throw e;
+    });
+  }
+
+  // ---------- helpers ----------
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function money(n){ n=Number(n)||0; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2}); }
+  function payText(n){ return Number(n)>0 ? money(n) : '<span class="muted">Pay TBD</span>'; }
+  function tm(t){ return esc(t||''); }
+  function pill(s,label){ return '<span class="pill '+esc(String(s||'').split(' ')[0].replace(/[^A-Za-z]/g,''))+'">'+esc(label||s)+'</span>'; }
+  function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove('show');},2800); }
+  function busy(btn,on,label){ if(!btn) return; if(on){ btn.dataset.l=btn.textContent; btn.textContent=label||'Working…'; btn.disabled=true; } else { btn.textContent=btn.dataset.l||btn.textContent; btn.disabled=false; } }
+  function val(id){ var e=$(id); return e ? e.value : ''; }
+  function chips(name, options, current){
+    return '<div class="filters">'+options.map(function(o){ var v=Array.isArray(o)?o[0]:o, l=Array.isArray(o)?o[1]:o;
+      return '<button class="chip'+(String(v)===String(current)?' on':'')+'" data-act="chip" data-k="'+name+'" data-v="'+esc(v)+'">'+esc(l)+'</button>'; }).join('')+'</div>';
+  }
+  function credChecks(prefix, selected){
+    selected = selected||[];
+    return CREDS.map(function(c,i){ return '<label><input type="checkbox" class="'+prefix+'" value="'+esc(c)+'"'+(selected.indexOf(c)>=0?' checked':'')+'> '+esc(c)+'</label>'; }).join('');
+  }
+  function checked(cls){ return Array.prototype.slice.call(document.querySelectorAll('.'+cls+':checked')).map(function(e){ return e.value; }); }
+  function stateOf(r){ return r.status==='Approved' && r.pay ? r.pay : r.status; }
+
+  // ---------- login ----------
+  function showLogin(msg){
+    $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+    step('email'); setMsg(msg||'', msg?'err':'');
+  }
+  function step(n){ ['email','signup','code'].forEach(function(s){ $('step-'+s).classList.toggle('hidden', s!==n); }); }
+  function setMsg(t,cls){ var m=$('login-msg'); m.textContent=t; m.className='msg '+(cls||''); }
+  var pendingEmail='';
+  function toCode(email, text){ pendingEmail=email; $('code-text').innerHTML=text; step('code'); $('code').value=''; $('code').focus(); }
+  function sendCode(e){
+    if(e) e.preventDefault();
+    var email=$('email').value.trim(); if(!email) return;
+    var btn=$('btn-send'); busy(btn,true,'Sending…'); setMsg('');
+    api('apiRequestCode',email).then(function(r){
+      if(r && r.unknown){ setMsg('We don\'t have an instructor account for '+email+'. Create one below.','err'); $('su-email').value=email; step('signup'); return; }
+      toCode(email,'A code is on its way to <b>'+esc(email)+'</b>. Check your inbox (and spam).');
+    }).catch(function(err){ setMsg(err.message,'err'); }).then(function(){ busy(btn,false); });
+  }
+  function signup(e){
+    e.preventDefault();
+    var btn=$('btn-signup'); busy(btn,true,'Creating…'); setMsg('');
+    var p={ name:val('su-name'), email:val('su-email'), phone:val('su-phone'), about:val('su-about'), credentials:checked('su-cred') };
+    api('apiSignup',p).then(function(r){
+      toCode(p.email.trim(), (r.existing?'You already have an account, so we just sent a login code':'Account created. We sent a login code')+' to <b>'+esc(p.email.trim())+'</b>.');
+    }).catch(function(err){ setMsg(err.message,'err'); }).then(function(){ busy(btn,false); });
+  }
+  function verify(e){
+    e.preventDefault();
+    var btn=$('btn-verify'); busy(btn,true,'Checking…'); setMsg('');
+    api('apiVerifyCode',pendingEmail,$('code').value).then(function(r){ setToken(r.token); start(); })
+      .catch(function(err){ setMsg(err.message,'err'); }).then(function(){ busy(btn,false); });
+  }
+
+  // ---------- app ----------
+  function start(){
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    $('view').innerHTML='<div class="loading"><div class="spinner"></div>Loading…</div>';
+    return refresh(true);
+  }
+  function refresh(first){
+    return authed('apiGetData').then(function(d){
+      S.data=d;
+      if(first){
+        if(!d.me.isInstructor && d.me.isAdmin) S.tab='approvals';
+        var openC = d.courses.filter(function(c){ return c.sessions.length; });
+        S.course = (openC[0]||d.courses[0]||{}).id || null;
+        S.bCourse = S.course;
+      }
+      $('who-name').textContent = d.me.name + (d.me.isAdmin ? ' · Admin' : '');
+      render();
+    }).catch(function(e){ if(!e.session) $('view').innerHTML='<div class="card"><p>'+esc(e.message)+'</p><button class="btn" data-act="retry">Try again</button></div>'; });
+  }
+  function adminCounts(){
+    var a=S.data.admin; if(!a) return {};
+    return { accounts:a.instructors.filter(function(i){return i.status==='Pending';}).length,
+      requests:a.requests.filter(function(r){return r.status==='Pending' && !r.past;}).length,
+      drops:a.requests.filter(function(r){return r.status==='Drop requested';}).length,
+      owed:a.requests.filter(function(r){return r.pay==='Owed';}).length };
+  }
+  function render(){
+    var d=S.data, tabs=[];
+    if(d.me.isInstructor){ tabs.push(['slots','Open slots'],['mine','My schedule'],['earn','Earnings'],['profile','Profile & certs']); }
+    else tabs.push(['slots','Course overview']);
+    if(d.me.isAdmin){ var c=adminCounts(); tabs.push(['approvals','Approvals',(c.accounts+c.requests+c.drops)],['instructors','Instructors'],['builder','Schedule builder'],['payments','Payments',c.owed],['settings','Settings']); }
+    if(!tabs.some(function(t){return t[0]===S.tab;})) S.tab=tabs[0][0];
+    $('tabs').innerHTML = tabs.map(function(t){ return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'">'+t[1]+(t[2]?'<span class="cnt">'+t[2]+'</span>':'')+'</button>'; }).join('');
+    var y=window.scrollY;
+    $('view').innerHTML = ({slots:vSlots,mine:vMine,earn:vEarn,profile:vProfile,approvals:vApprovals,instructors:vInstructors,builder:vBuilder,payments:vPayments,settings:vSettings}[S.tab])();
+    window.scrollTo(0,y);
+  }
+
+  // ---------- Open slots ----------
+  function vSlots(){
+    var d=S.data, me=d.me, out='';
+    out+='<h2>'+(me.isInstructor?'Open slots':'Course overview')+'</h2><p class="sub">Pick the blocks you can teach. Your request holds the spot until a ResQ admin approves it. If a slot is full, you join the waitlist and move up automatically.</p>';
+    if(me.isInstructor && me.status==='Pending') out+='<div class="warnbox"><b>Your account is under review.</b> You can request slots now and they\'ll be held for you. ResQ will check your certifications, then approve your account and your slots.</div>';
+    if(!d.courses.length) return out+'<div class="card"><p class="empty">No courses are open for sign-up right now.</p></div>';
+    var course = d.courses.filter(function(c){return c.id===S.course;})[0] || d.courses[0];
+    var roles = ['All'].concat(d.config.roles.filter(function(r){return r.active;}).map(function(r){return r.name;}));
+    out+='<div class="toolbar">'+chips('course', d.courses.map(function(c){return [c.id, c.name.replace('Accelerated EMT — ','EMT ')+(c.status!=='Open'?' ('+c.status+')':'')];}), course.id)+
+      '<label class="small" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600"><input type="checkbox" data-act="onlyOpen"'+(S.onlyOpen?' checked':'')+'> Only show slots with openings</label></div>';
+    out+='<div class="toolbar">'+chips('role', roles, S.role)+'</div>';
+    if(course.description) out+='<p class="small muted" style="margin:-4px 0 14px">'+esc(course.location)+(course.location?' · ':'')+esc(course.description)+'</p>';
+    var byDay={}, order=[];
+    course.sessions.forEach(function(s){ if(s.past && !me.isAdmin) return; var k=s.date; if(!byDay[k]){ byDay[k]=[]; order.push(k); } byDay[k].push(s); });
+    var shown=0;
+    order.forEach(function(k){
+      var sess=byDay[k], blocks='';
+      sess.forEach(function(s){
+        var slots=s.slots.filter(function(sl){ return (S.role==='All'||sl.role===S.role) && (!S.onlyOpen || sl.held<sl.openings || sl.mine) && (me.isAdmin || sl.status==='Open'); });
+        if(!slots.length) return;
+        blocks+='<div class="blk"><div class="blk-h"><span class="b">'+esc(s.block||'')+'</span><b class="tm">'+tm(s.start)+'–'+tm(s.end)+'</b><span class="tp">'+esc(s.topic)+'</span>'+(s.status!=='Open'?pill(s.status):'')+'</div>'+
+          slots.map(function(sl){ return slotRow(sl,s); }).join('')+'</div>';
+      });
+      if(!blocks) return; shown++;
+      out+='<div class="day"><div class="day-h"><span class="t">Day '+esc(sess[0].day)+' · '+esc(sess[0].dateText)+'</span><span class="s">'+esc(course.name)+'</span></div>'+blocks+'</div>';
+    });
+    if(!shown) out+='<div class="card"><p class="empty">Nothing matches these filters.</p></div>';
+    return out;
+  }
+  function slotRow(sl,s){
+    var me=S.data.me, left=sl.openings-sl.held, act='';
+    var role=S.data.config.roles.filter(function(r){return r.name===sl.role;})[0]||{};
+    if(sl.mine){
+      act=sl.mine.status==='Waitlist' ? pill('Waitlist','Waitlist #'+sl.mine.position) : pill(sl.mine.status);
+      act+=' <button class="btn ghost small" data-act="gomine">Manage</button>';
+    } else if(me.isInstructor && !s.past && sl.status==='Open' && s.status==='Open'){
+      act='<button class="btn small'+(left>0?'':' dark')+'" data-act="request" data-id="'+esc(sl.id)+'">'+(left>0?'Request':'Join waitlist')+'</button>';
+    }
+    var fill = left>0 ? '<b>'+left+'</b> of '+sl.openings+' open' : '<b>Full</b>'+(sl.waitlist?' · '+sl.waitlist+' waiting':'');
+    var warn = me.isInstructor && me.status==='Approved' && !sl.qualified && !sl.mine ? '<div class="n" style="color:var(--warn)">You\'re not cleared for this role yet. You can still request it and ResQ will review.</div>' : '';
+    var people = sl.people && sl.people.length ? '<div class="people">'+sl.people.map(function(p){ return '<span class="pp">'+esc(p.name)+' '+pill(p.status, p.status==='Waitlist'?'WL':p.status)+'</span>'; }).join('')+'</div>' : '';
+    return '<div class="slot"><div><div class="r">'+esc(sl.role)+(sl.status!=='Open'?' '+pill(sl.status):'')+'</div>'+(sl.notes?'<div class="n">'+esc(sl.notes)+'</div>':'')+
+      (role.requirements?'<div class="n"><i>Requires:</i> '+esc(role.requirements)+'</div>':'')+warn+people+'</div>'+
+      '<div class="tm">'+tm(sl.call||s.start)+'–'+tm(sl.release||s.end)+'</div><div class="op">'+fill+'</div><div>'+payText(sl.pay)+'</div><div class="act">'+act+'</div></div>';
+  }
+
+  // ---------- My schedule ----------
+  function vMine(){
+    var d=S.data, rs=d.requests, out='<h2>My schedule</h2><p class="sub">Pending and waitlist requests can be released anytime. Dropping an approved slot needs ResQ\'s OK.</p>';
+    var groups={ Upcoming:rs.filter(function(r){return !r.past && ['Pending','Approved','Waitlist','Drop requested'].indexOf(r.status)>=0;}),
+      Past:rs.filter(function(r){return r.past && r.status==='Approved';}),
+      Closed:rs.filter(function(r){return ['Declined','Dropped'].indexOf(r.status)>=0 || (r.past && r.status!=='Approved');}) };
+    out+='<div class="toolbar">'+chips('mineFilter',[['Upcoming','Upcoming ('+groups.Upcoming.length+')'],['Past','Past ('+groups.Past.length+')'],['Closed','Declined / dropped ('+groups.Closed.length+')']],S.mineFilter)+'</div>';
+    var list=groups[S.mineFilter]||[];
+    if(!list.length) return out+'<div class="card"><p class="empty">'+(S.mineFilter==='Upcoming'?'No upcoming slots yet. Head to <button class="linkbtn" data-act="tab" data-v="slots">Open slots</button> to request some.':'Nothing here.')+'</p></div>';
+    out+='<div class="card"><div class="list">'+list.map(function(r){
+      var tools='';
+      if(!r.past){
+        if(r.status==='Pending'||r.status==='Waitlist') tools+='<button class="btn ghost small" data-act="drop" data-id="'+esc(r.id)+'">Release</button>';
+        if(r.status==='Approved') tools+='<button class="btn ghost small" data-act="ics" data-id="'+esc(r.id)+'">Add to calendar</button><button class="btn ghost small" data-act="dropAsk" data-id="'+esc(r.id)+'">Request drop</button>';
+        if(r.status==='Drop requested') tools+='<button class="btn ghost small" data-act="drop" data-id="'+esc(r.id)+'">Keep my slot</button>';
+      }
+      var form = S.dropFor===r.id ? '<div class="inline-form" style="width:100%"><div style="flex:1;min-width:200px"><label>Why do you need to drop? (goes to ResQ)</label><input id="drop-reason" type="text" style="width:100%"></div><button class="btn small" data-act="drop" data-id="'+esc(r.id)+'">Send drop request</button><button class="btn ghost small" data-act="dropCancel">Cancel</button></div>' : '';
+      return '<div class="row" style="flex-wrap:wrap"><div><div class="t">'+esc(r.role)+' · Day '+esc(r.day)+' '+esc(r.block)+'</div><div class="s">'+esc(r.dateText)+', '+tm(r.call)+'–'+tm(r.release)+' · '+esc(r.course)+(r.location?' · '+esc(r.location):'')+'</div>'+
+        (r.notes?'<div class="s">'+esc(r.notes)+'</div>':'')+'</div><div class="row-tools">'+(r.status==='Waitlist'?pill('Waitlist','Waitlist #'+r.position):pill(r.status))+
+        (r.status==='Approved'?' '+(r.amount>0?money(r.amount):'<span class="small muted">Pay TBD</span>'):'')+tools+'</div>'+form+'</div>';
+    }).join('')+'</div></div>';
+    return out;
+  }
+
+  // ---------- Earnings ----------
+  function vEarn(){
+    var d=S.data, e=d.earnings, out='<h2>Earnings</h2><p class="sub">What you\'ve earned on approved slots. Amounts come from each slot\'s pay rate.</p>';
+    out+='<div class="grid g4" style="margin-bottom:16px"><div class="stat"><div class="n">'+e.approved+'</div><div class="l">Approved slots</div></div><div class="stat"><div class="n">'+money(e.upcoming)+'</div><div class="l">Upcoming</div></div>'+
+      '<div class="stat accent"><div class="n">'+money(e.owed)+'</div><div class="l">Worked, not paid yet</div></div><div class="stat"><div class="n">'+money(e.paid)+'</div><div class="l">Paid</div></div></div>';
+    var rs=d.requests.filter(function(r){return r.status==='Approved';});
+    if(!rs.length) return out+'<div class="card"><p class="empty">No approved slots yet.</p></div>';
+    return out+'<div class="card tbl-wrap"><table><thead><tr><th>Date</th><th>Slot</th><th>Course</th><th>Amount</th><th>Status</th></tr></thead><tbody>'+rs.map(function(r){
+      return '<tr><td>'+esc(r.dateText)+'</td><td>'+esc(r.role)+' · '+esc(r.block)+'</td><td>'+esc(r.course)+'</td><td>'+(r.amount>0?money(r.amount):'<span class="muted">TBD</span>')+'</td><td>'+pill(r.pay)+(r.paidOn?' <span class="small muted">'+esc(r.paidOn)+'</span>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  }
+
+  // ---------- Profile ----------
+  function vProfile(){
+    var d=S.data, me=d.me, out='<h2>Profile & certs</h2><p class="sub">Keep your contact info and certifications current. ResQ uses your uploaded cards to clear you for roles.</p>';
+    out+='<div class="grid g2"><div class="card"><h3>Your info</h3><div class="form-grid">'+
+      '<div class="full"><label>Name</label><input id="pf-name" type="text" value="'+esc(me.name)+'"></div>'+
+      '<div><label>Email</label><input type="email" value="'+esc(me.email)+'" disabled></div><div><label>Phone</label><input id="pf-phone" type="tel" value="'+esc(me.phone)+'"></div>'+
+      '<div class="full"><label>Certifications</label><div class="checks">'+credChecks('pf-cred',me.credentials)+'</div></div>'+
+      '<div class="full"><label>Experience</label><textarea id="pf-about">'+esc(me.about)+'</textarea></div></div>'+
+      '<div style="margin-top:12px"><button class="btn" data-act="saveProfile">Save</button></div></div>';
+    out+='<div><div class="card"><h3>Account</h3><p>Status: '+pill(me.status)+'</p><p class="small">Cleared roles: '+(me.roles.length?esc(me.roles.join(', ')):'<span class="muted">none yet</span>')+'</p>'+
+      '<p class="small muted">Patient slots are open to every approved account.</p></div>';
+    out+='<div class="card"><h3>Certification cards</h3>';
+    out+= d.certs.length ? '<div class="list">'+d.certs.map(function(c){ return '<div class="row"><div><div class="t">'+esc(c.credential)+'</div><div class="s">'+esc(c.fileName)+'</div></div><div class="s">'+(c.expires?'Expires '+esc(c.expires)+'<br>':'')+'Uploaded '+esc(c.uploaded)+'</div></div>'; }).join('')+'</div>' : '<p class="empty">No cards uploaded yet.</p>';
+    if(d.config.uploads){
+      out+='<div class="form-grid" style="margin-top:12px"><div><label>Certification</label><select id="up-cred"><option value="">Pick one…</option>'+CREDS.concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div>'+
+        '<div><label>Expires</label><input id="up-exp" type="date"></div><div class="full"><label>File (PDF or photo, under 4 MB)</label><input id="up-file" type="file" accept="application/pdf,image/*"></div></div>'+
+        '<div style="margin-top:12px"><button class="btn" data-act="upload">Upload</button></div>';
+    } else out+='<p class="note">Uploads aren\'t switched on yet. Email your cards to '+esc(d.config.contact)+'.</p>';
+    out+='</div></div></div>';
+    return out;
+  }
+
+  // ---------- Admin: approvals ----------
+  function roleChecks(cls, sel){ return S.data.config.roles.map(function(r){ return '<label><input type="checkbox" class="'+cls+'" value="'+esc(r.name)+'"'+(sel.indexOf(r.name)>=0||r.openToAll?' checked':'')+(r.openToAll?' disabled title="Open to every approved account"':'')+'> '+esc(r.name)+'</label>'; }).join(''); }
+  function vApprovals(){
+    var a=S.data.admin, out='<h2>Approvals</h2><p class="sub">New accounts, slot requests and drop requests waiting on you or a co-owner.</p>';
+    var pend=a.instructors.filter(function(i){return i.status==='Pending';});
+    out+='<div class="card"><h3>New instructor accounts'+(pend.length?'<span class="cnt">'+pend.length+'</span>':'')+'</h3>';
+    out+= pend.length ? pend.map(function(i){ return insCard(i,true); }).join('') : '<p class="empty">No accounts waiting.</p>';
+    out+='</div>';
+    var reqs=a.requests.filter(function(r){return r.status==='Pending' && !r.past;});
+    var insBy={}; a.instructors.forEach(function(i){ insBy[i.email]=i; });
+    out+='<div class="card"><h3>Slot requests'+(reqs.length?'<span class="cnt">'+reqs.length+'</span>':'')+'</h3>';
+    out+= reqs.length ? '<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Slot</th><th>Who</th><th>Account</th><th></th></tr></thead><tbody>'+reqs.map(function(r){
+      var i=insBy[r.email]||{roles:[],status:'?'}, role=S.data.config.roles.filter(function(x){return x.name===r.role;})[0]||{};
+      var q = i.status==='Approved' && (role.openToAll || i.roles.indexOf(r.role)>=0);
+      return '<tr><td>'+esc(r.dateText)+'<div class="small muted">Day '+esc(r.day)+' '+esc(r.block)+' · '+esc(r.course.replace('Accelerated EMT — ',''))+'</div></td><td><b>'+esc(r.role)+'</b><div class="small muted">'+tm(r.call)+'–'+tm(r.release)+'</div></td><td>'+esc(r.name)+(r.note?'<div class="small muted">"'+esc(r.note)+'"</div>':'')+'</td>'+
+        '<td>'+pill(i.status)+(i.status==='Approved'&&!q?'<div class="small" style="color:var(--warn)">Not cleared for '+esc(r.role)+'</div>':'')+'</td>'+
+        '<td class="row-tools">'+(q?'<button class="btn small" data-act="req" data-op="approve" data-id="'+esc(r.id)+'">Approve</button>':
+          (i.status==='Approved'?'<button class="btn small dark" data-act="clearRole" data-email="'+esc(r.email)+'" data-role="'+esc(r.role)+'" data-id="'+esc(r.id)+'">Clear role + approve</button>':'<span class="small muted">Approve account first</span>'))+
+        '<button class="btn ghost small" data-act="req" data-op="decline" data-id="'+esc(r.id)+'">Decline</button></td></tr>';
+    }).join('')+'</tbody></table></div>' : '<p class="empty">No slot requests waiting.</p>';
+    out+='</div>';
+    var drops=a.requests.filter(function(r){return r.status==='Drop requested';});
+    out+='<div class="card"><h3>Drop requests'+(drops.length?'<span class="cnt">'+drops.length+'</span>':'')+'</h3>';
+    out+= drops.length ? '<div class="list">'+drops.map(function(r){ return '<div class="row"><div><div class="t">'+esc(r.name)+' · '+esc(r.role)+'</div><div class="s">'+esc(r.dateText)+' Day '+esc(r.day)+' '+esc(r.block)+' · '+esc(r.course)+(r.note?' · "'+esc(r.note)+'"':'')+'</div></div>'+
+      '<div class="row-tools"><button class="btn small" data-act="req" data-op="approveDrop" data-id="'+esc(r.id)+'">Approve drop</button><button class="btn ghost small" data-act="req" data-op="denyDrop" data-id="'+esc(r.id)+'">Keep them on</button></div></div>'; }).join('')+'</div>' : '<p class="empty">No drop requests.</p>';
+    out+='</div>';
+    var wl=a.requests.filter(function(r){return r.status==='Waitlist' && !r.past;});
+    if(wl.length) out+='<div class="card"><h3>Waitlists</h3><div class="list">'+wl.map(function(r){ return '<div class="row"><div><div class="t">'+esc(r.name)+' · '+esc(r.role)+' #'+r.position+'</div><div class="s">'+esc(r.dateText)+' Day '+esc(r.day)+' '+esc(r.block)+'</div></div><button class="btn ghost small" data-act="req" data-op="decline" data-id="'+esc(r.id)+'">Remove</button></div>'; }).join('')+'</div><p class="note">Waitlisted people move up on their own when a spot opens. To approve one now, add an opening in the Schedule builder.</p></div>';
+    return out;
+  }
+  function insCard(i, compact){
+    var k=i.email, cls='rc-'+k.replace(/[^a-z0-9]/gi,'');
+    var certs = i.certs.length ? i.certs.map(function(c){ return (c.link?'<a href="'+esc(c.link)+'" target="_blank" rel="noopener">'+esc(c.credential)+'</a>':esc(c.credential))+(c.expires?' <span class="muted">(exp '+esc(c.expires)+')</span>':''); }).join(' · ') : '<span class="muted">No cards uploaded</span>';
+    return '<div class="ins-card"><div class="ins-top"><div><div class="t">'+esc(i.name)+' '+pill(i.status)+(i.admin?' '+pill('Open','Admin'):'')+'</div><div class="small muted">'+esc(i.email)+' · '+esc(i.phone)+' · applied '+esc(i.applied)+'</div>'+
+      '<div class="small">Certifications: '+esc(i.credentials.join(', ')||'-')+'</div><div class="small">Cards: '+certs+(i.folder?' · <a href="'+esc(i.folder)+'" target="_blank" rel="noopener">Drive folder</a>':'')+'</div>'+
+      (i.about?'<div class="small muted" style="margin-top:4px">"'+esc(i.about)+'"</div>':'')+'</div>'+
+      '<div class="small" style="text-align:right">'+i.holding+' active request'+(i.holding===1?'':'s')+'<br>'+i.earnings.approved+' approved · '+money(i.earnings.owed)+' owed</div></div>'+
+      '<div style="margin-top:10px"><label>Cleared for roles</label><div class="checks">'+roleChecks(cls,i.roles)+'</div></div>'+
+      (compact?'':'<div style="margin-top:8px"><label>Admin notes (only admins see these)</label><input type="text" class="ed" id="note-'+cls+'" value="'+esc(i.notes)+'"></div>')+
+      '<div class="row-tools" style="margin-top:10px">'+
+      (i.status!=='Approved'?'<button class="btn small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">Approve with these roles</button>':'<button class="btn small" data-act="ins" data-op="save" data-email="'+esc(k)+'" data-cls="'+cls+'">Save roles'+(compact?'':' & notes')+'</button>')+
+      (i.status==='Pending'?'<button class="btn ghost small" data-act="ins" data-op="Declined" data-email="'+esc(k)+'" data-cls="'+cls+'">Decline</button>':'')+
+      (i.status==='Approved'?'<button class="btn ghost small" data-act="ins" data-op="Inactive" data-email="'+esc(k)+'" data-cls="'+cls+'">Make inactive</button>':'')+
+      ((i.status==='Declined'||i.status==='Inactive')?'<button class="btn ghost small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">Reactivate</button>':'')+
+      '</div></div>';
+  }
+
+  // ---------- Admin: instructors ----------
+  function vInstructors(){
+    var a=S.data.admin, q=S.insSearch.toLowerCase();
+    var list=a.instructors.filter(function(i){ return (S.insFilter==='All'||i.status===S.insFilter) && (!q || (i.name+' '+i.email+' '+i.credentials.join(' ')+' '+i.roles.join(' ')).toLowerCase().indexOf(q)>=0); });
+    var out='<h2>Instructors</h2><p class="sub">'+a.instructors.length+' accounts. Approve people, set which roles they can fill, and check their cards.</p>';
+    out+='<div class="toolbar">'+chips('insFilter',['All','Pending','Approved','Inactive','Declined'],S.insFilter)+'<input type="text" id="ins-search" placeholder="Search name, cert or role" value="'+esc(S.insSearch)+'" style="max-width:260px"></div>';
+    out+= list.length ? list.map(function(i){ return insCard(i,false); }).join('') : '<div class="card"><p class="empty">No instructors match.</p></div>';
+    return out;
+  }
+
+  // ---------- Admin: schedule builder ----------
+  function vBuilder(){
+    var d=S.data, roles=d.config.roles, out='<h2>Schedule builder</h2><p class="sub">Courses, class blocks and the slots in each block. Changes show up for instructors right away.</p>';
+    out+='<div class="toolbar">'+chips('bCourse', d.courses.map(function(c){return [c.id,c.name.replace('Accelerated EMT — ','EMT ')];}).concat([['__new','+ New course']]), S.bCourse)+'</div>';
+    if(S.bCourse==='__new'){
+      return out+'<div class="card"><h3>New course</h3>'+courseForm({})+'<p class="note">New courses start hidden. Tip: to reuse a full schedule, open an existing course and use "Copy this course" instead.</p></div>';
+    }
+    var c=d.courses.filter(function(x){return x.id===S.bCourse;})[0]; if(!c) return out+'<div class="card"><p class="empty">Pick a course.</p></div>';
+    out+='<div class="grid g2"><div class="card"><h3>Course details '+pill(c.status)+'</h3>'+courseForm(c)+'</div><div>';
+    out+='<div class="card"><h3>Set pay for a role</h3><p class="small muted">Sets the flat amount on every matching slot in this course. Fine-tune single slots below.</p><div class="inline-form">'+
+      '<div><label>Role</label><select id="bp-role">'+roles.map(function(r){return '<option>'+esc(r.name)+'</option>';}).join('')+'</select></div>'+
+      '<div><label>Block</label><select id="bp-block"><option>All</option><option>AM</option><option>PM</option></select></div><div><label>Pay ($)</label><input id="bp-pay" type="number" min="0" step="5" style="width:90px"></div>'+
+      '<button class="btn small" data-act="bulkPay">Apply</button></div></div>';
+    out+='<div class="card"><h3>Copy this course</h3><p class="small muted">Copies every block and slot to new dates (keeps the same weekday pattern). The copy starts hidden.</p><div class="inline-form">'+
+      '<div><label>New name</label><input id="cp-name" type="text" value="'+esc(c.name)+' (copy)" style="width:230px"></div><div><label>New Day 1 date</label><input id="cp-start" type="date"></div><button class="btn small" data-act="copyCourse">Copy</button></div></div>';
+    out+='</div></div>';
+    out+='<h3 style="margin-top:8px">Blocks</h3><div class="legend"><span>Times are 24-hour (0730). Openings = how many people that slot needs. Closed slots are hidden from instructors.</span></div>';
+    c.sessions.forEach(function(s){ out+=sessEditor(s); });
+    out+='<div class="card"><h3>Add a block</h3><div class="inline-form">'+
+      '<div><label>Day #</label><input id="ns-day" type="number" min="0" style="width:70px"></div><div><label>Date</label><input id="ns-date" type="date"></div>'+
+      '<div><label>Block</label><select id="ns-block"><option>AM</option><option>PM</option><option>Full day</option><option>Evening</option></select></div>'+
+      '<div><label>Start</label><input id="ns-start" type="text" value="0730" style="width:70px"></div><div><label>End</label><input id="ns-end" type="text" value="1200" style="width:70px"></div>'+
+      '<div style="flex:1;min-width:180px"><label>Topic</label><input id="ns-topic" type="text" style="width:100%"></div><button class="btn small" data-act="addSess">Add block</button></div><p class="note">A new block gets no slots; add them after it\'s created.</p></div>';
+    return out;
+  }
+  function courseForm(c){
+    var id=c.id||'';
+    return '<div class="form-grid"><div class="full"><label>Name</label><input id="cf-name" type="text" value="'+esc(c.name||'')+'"></div>'+
+      '<div><label>Start</label><input id="cf-start" type="date" value="'+esc(c.start||'')+'"></div><div><label>End</label><input id="cf-end" type="date" value="'+esc(c.end||'')+'"></div>'+
+      '<div><label>Location</label><input id="cf-loc" type="text" value="'+esc(c.location||'')+'"></div><div><label>Students expected</label><input id="cf-stu" type="number" min="0" value="'+esc(c.students||'')+'"></div>'+
+      '<div><label>Status</label><select id="cf-status">'+['Open','Hidden','Closed'].map(function(s){return '<option'+(s===(c.status||'Hidden')?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+      '<div class="full"><label>Description (instructors see this)</label><textarea id="cf-desc">'+esc(c.description||'')+'</textarea></div></div>'+
+      '<div style="margin-top:12px"><button class="btn" data-act="saveCourse" data-id="'+esc(id)+'">'+(id?'Save course':'Create course')+'</button></div>'+
+      '<p class="note">Open = instructors can see it and sign up. Hidden = only admins see it. Closed = visible to admins only, sign-up off.</p>';
+  }
+  function sessEditor(s){
+    var roles=S.data.config.roles, need=0, held=0, pend=0;
+    s.slots.forEach(function(sl){ if(sl.status==='Open'){ need+=sl.openings; held+=Math.min(sl.held,sl.openings); } (sl.people||[]).forEach(function(p){ if(p.status==='Pending') pend++; }); });
+    var id=s.id, k=id.replace(/[^A-Za-z0-9]/g,'');
+    var ins=S.data.admin.instructors.filter(function(i){return i.status==='Approved';});
+    var h='<details class="sess" data-sess="'+esc(id)+'"'+(S.openSess[id]?' open':'')+'><summary><span class="blk-h" style="margin:0"><span class="b">'+esc(s.block)+'</span></span><b>Day '+esc(s.day)+' · '+esc(s.dateText)+'</b><span class="small muted">'+tm(s.start)+'–'+tm(s.end)+' · '+esc(s.topic)+'</span>'+(s.status!=='Open'?pill(s.status):'')+
+      '<span class="sum-r">'+held+' / '+need+' filled'+(pend?' · '+pend+' pending':'')+'</span></summary><div class="sess-body">';
+    h+='<div class="inline-form" style="margin-top:0"><div><label>Day #</label><input id="se-day-'+k+'" type="number" value="'+esc(s.day)+'" style="width:64px"></div><div><label>Date</label><input id="se-date-'+k+'" type="date" value="'+esc(s.date)+'"></div>'+
+      '<div><label>Block</label><input id="se-block-'+k+'" type="text" value="'+esc(s.block)+'" style="width:80px"></div><div><label>Start</label><input id="se-start-'+k+'" type="text" value="'+esc(s.start)+'" style="width:64px"></div><div><label>End</label><input id="se-end-'+k+'" type="text" value="'+esc(s.end)+'" style="width:64px"></div>'+
+      '<div style="flex:1;min-width:160px"><label>Topic</label><input id="se-topic-'+k+'" type="text" value="'+esc(s.topic)+'" style="width:100%"></div>'+
+      '<div><label>Status</label><select id="se-status-'+k+'">'+['Open','Hidden','Cancelled'].map(function(x){return '<option'+(x===s.status?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
+      '<button class="btn ghost small" data-act="saveSess" data-id="'+esc(id)+'" data-k="'+k+'">Save block</button></div>';
+    h+='<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th style="min-width:150px">Role</th><th>Openings</th><th>Pay $</th><th>Call</th><th>Release</th><th style="min-width:200px">Notes</th><th>Status</th><th></th></tr></thead><tbody>';
+    s.slots.forEach(function(sl,i){
+      var sk=k+'_'+i;
+      h+='<tr><td><b>'+esc(sl.role)+'</b><div class="people">'+(sl.people||[]).map(function(p){ return '<span class="pp">'+esc(p.name)+' '+pill(p.status,p.status==='Waitlist'?'WL':p.status)+'</span>'; }).join('')+'</div>'+
+        (S.assignFor===sl.id ? '<div class="inline-form"><select id="as-'+sk+'"><option value="">Pick an approved instructor…</option>'+ins.map(function(i){ return '<option value="'+esc(i.email)+'">'+esc(i.name)+'</option>'; }).join('')+'</select><button class="btn small" data-act="assign" data-id="'+esc(sl.id)+'" data-k="'+sk+'">Assign</button></div>' :
+          '<button class="linkbtn small" data-act="assignOpen" data-id="'+esc(sl.id)+'">+ Assign someone</button>')+'</td>'+
+        '<td><input class="ed" id="sl-open-'+sk+'" type="number" min="0" value="'+esc(sl.openings)+'" style="width:64px"></td><td><input class="ed" id="sl-pay-'+sk+'" type="number" min="0" step="5" value="'+esc(sl.pay)+'" style="width:80px"></td>'+
+        '<td><input class="ed" id="sl-call-'+sk+'" type="text" value="'+esc(sl.call)+'" style="width:62px"></td><td><input class="ed" id="sl-rel-'+sk+'" type="text" value="'+esc(sl.release)+'" style="width:62px"></td>'+
+        '<td><input class="ed" id="sl-notes-'+sk+'" type="text" value="'+esc(sl.notes)+'"></td><td><select class="ed" id="sl-status-'+sk+'"><option'+(sl.status==='Open'?' selected':'')+'>Open</option><option'+(sl.status==='Closed'?' selected':'')+'>Closed</option></select></td>'+
+        '<td><button class="btn ghost small" data-act="saveSlot" data-id="'+esc(sl.id)+'" data-k="'+sk+'">Save</button></td></tr>';
+    });
+    h+='<tr><td><select class="ed" id="ns-role-'+k+'">'+roles.map(function(r){return '<option>'+esc(r.name)+'</option>';}).join('')+'</select></td><td><input class="ed" id="ns-open-'+k+'" type="number" min="1" value="1" style="width:64px"></td>'+
+      '<td><input class="ed" id="ns-pay-'+k+'" type="number" min="0" step="5" value="0" style="width:80px"></td><td><input class="ed" id="ns-call-'+k+'" type="text" value="'+esc(s.start)+'" style="width:62px"></td><td><input class="ed" id="ns-rel-'+k+'" type="text" value="'+esc(s.end)+'" style="width:62px"></td>'+
+      '<td><input class="ed" id="ns-notes-'+k+'" type="text" placeholder="Notes for this role"></td><td></td><td><button class="btn small" data-act="addSlot" data-id="'+esc(id)+'" data-k="'+k+'">Add slot</button></td></tr>';
+    h+='</tbody></table></div></div></details>';
+    return h;
+  }
+
+  // ---------- Admin: payments ----------
+  function vPayments(){
+    var a=S.data.admin, out='<h2>Payments</h2><p class="sub">Approved slots and what\'s owed. "Owed" means the block has happened and it isn\'t marked paid yet.</p>';
+    var courses=['All'].concat(S.data.courses.map(function(c){return c.id;}));
+    var base=a.requests.filter(function(r){ return r.status==='Approved' && (S.payCourse==='All'||r.courseId===S.payCourse); });
+    var list=base.filter(function(r){ return S.payFilter==='All' || r.pay===S.payFilter; });
+    var tot={Owed:0,Upcoming:0,Paid:0}; base.forEach(function(r){ tot[r.pay]=(tot[r.pay]||0)+r.amount; });
+    out+='<div class="grid g4" style="margin-bottom:16px"><div class="stat accent"><div class="n">'+money(tot.Owed)+'</div><div class="l">Owed now</div></div><div class="stat"><div class="n">'+money(tot.Upcoming)+'</div><div class="l">Upcoming (approved)</div></div><div class="stat"><div class="n">'+money(tot.Paid)+'</div><div class="l">Paid</div></div><div class="stat"><div class="n">'+base.length+'</div><div class="l">Approved slots</div></div></div>';
+    out+='<div class="toolbar">'+chips('payFilter',['Owed','Upcoming','Paid','All'],S.payFilter)+chips('payCourse',courses.map(function(c){ var x=S.data.courses.filter(function(y){return y.id===c;})[0]; return [c, x?x.name.replace('Accelerated EMT — ','EMT '):'All courses']; }),S.payCourse)+
+      '<button class="btn ghost small" data-act="csv">Export CSV</button></div>';
+    out+= list.length ? '<div class="card tbl-wrap"><table><thead><tr><th>Date</th><th>Instructor</th><th>Slot</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>'+list.map(function(r){
+      var k=r.id.replace(/[^A-Za-z0-9]/g,'');
+      return '<tr><td>'+esc(r.dateText)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.role)+' · Day '+esc(r.day)+' '+esc(r.block)+'<div class="small muted">'+esc(r.course.replace('Accelerated EMT — ',''))+'</div></td>'+
+        '<td><input class="ed" id="amt-'+k+'" type="number" min="0" step="5" value="'+esc(r.amount)+'" style="width:90px"'+(r.paid?' disabled':'')+'>'+(r.amountSet&&!r.paid?'<div class="small muted">custom</div>':'')+'</td>'+
+        '<td>'+pill(r.pay)+(r.paidOn?' <span class="small muted">'+esc(r.paidOn)+'</span>':'')+'</td><td class="row-tools">'+
+        (r.paid?'<button class="btn ghost small" data-act="req" data-op="unpaid" data-id="'+esc(r.id)+'">Undo paid</button>':'<button class="btn small" data-act="paid" data-id="'+esc(r.id)+'" data-k="'+k+'">Mark paid</button><button class="btn ghost small" data-act="amount" data-id="'+esc(r.id)+'" data-k="'+k+'">Save amount</button>')+'</td></tr>';
+    }).join('')+'</tbody></table></div>' : '<div class="card"><p class="empty">Nothing here.</p></div>';
+    var per={}; base.forEach(function(r){ var p=per[r.email]=per[r.email]||{name:r.name,n:0,Owed:0,Upcoming:0,Paid:0}; p.n++; p[r.pay]+=r.amount; });
+    var rows=Object.keys(per).map(function(k){return per[k];}).sort(function(x,y){return y.Owed-x.Owed || x.name.localeCompare(y.name);});
+    if(rows.length) out+='<div class="card tbl-wrap"><h3>By instructor</h3><table><thead><tr><th>Instructor</th><th>Slots</th><th>Owed</th><th>Upcoming</th><th>Paid</th></tr></thead><tbody>'+rows.map(function(p){ return '<tr><td>'+esc(p.name)+'</td><td>'+p.n+'</td><td><b>'+money(p.Owed)+'</b></td><td>'+money(p.Upcoming)+'</td><td>'+money(p.Paid)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+    return out;
+  }
+
+  // ---------- Admin: settings ----------
+  function vSettings(){
+    var a=S.data.admin, set={}; a.settings.forEach(function(s){ set[s.key]=s.value; });
+    var toggles=[['Email admins: new instructor signup','When someone creates an account'],['Email admins: new slot request','When someone requests or waitlists for a slot'],['Email admins: drop request','When someone asks to drop an approved slot'],
+      ['Email instructor: account approved or declined','Account approved, declined or made inactive'],['Email instructor: slot status change','Slot held, approved, declined, waitlisted, moved up or dropped'],
+      ['Email instructor: session reminder','Reminder before each approved slot'],['Email instructor: marked paid','When you mark a slot paid']];
+    var out='<h2>Settings</h2><p class="sub">Email alerts and roles. Login-code emails always send.</p><div class="grid g2"><div class="card"><h3>Emails</h3>';
+    out+=toggles.map(function(t,i){ var v=set[t[0]]; var isOn = v===undefined || v==='' || !/^(off|no|false|0)$/i.test(String(v));
+      return '<label class="switch"><input type="checkbox" class="set-t" data-key="'+esc(t[0])+'"'+(isOn?' checked':'')+'><span><b>'+esc(t[0].replace(/^Email (admins|instructor): /,''))+'</b> <span class="small muted">'+(t[0].indexOf('admins')>0?'to admins':'to instructor')+'</span><div class="d">'+esc(t[1])+'</div></span></label>'; }).join('');
+    out+='<div class="form-grid" style="margin-top:10px"><div><label>Reminder days before session</label><input id="set-days" type="number" min="0" max="30" value="'+esc(set['Reminder days before session']||3)+'"></div>'+
+      '<div class="full"><label>Admin alert emails (comma-separated; blank = everyone on the admin list)</label><input id="set-admins" type="text" value="'+esc(set['Admin alert emails']||'')+'"></div></div>'+
+      '<div style="margin-top:12px"><button class="btn" data-act="saveSettings">Save email settings</button></div></div>';
+    out+='<div class="card"><h3>Roles</h3><p class="small muted">"Open to all" roles can be filled by any approved account without clearing them first (good for Patient).</p>';
+    out+=S.data.config.roles.map(function(r,i){ return '<div class="ins-card"><div class="ins-top"><b>'+esc(r.name)+'</b>'+(r.active?'':pill('Inactive'))+'</div>'+
+      '<div style="margin-top:6px"><label>Description</label><input class="ed" id="ro-desc-'+i+'" value="'+esc(r.description)+'"></div><div style="margin-top:6px"><label>Requirements (shown on every slot)</label><input class="ed" id="ro-req-'+i+'" value="'+esc(r.requirements)+'"></div>'+
+      '<div class="row-tools" style="margin-top:8px"><label class="small" style="display:flex;gap:6px;margin:0"><input type="checkbox" id="ro-open-'+i+'"'+(r.openToAll?' checked':'')+'> Open to all approved</label><label class="small" style="display:flex;gap:6px;margin:0"><input type="checkbox" id="ro-act-'+i+'"'+(r.active?' checked':'')+'> Active</label>'+
+      '<button class="btn ghost small" data-act="saveRole" data-i="'+i+'">Save</button></div></div>'; }).join('');
+    out+='<div class="ins-card"><b>Add a role</b><div class="form-grid" style="margin-top:6px"><div><label>Name</label><input id="nr-name" type="text"></div><div><label>Requirements</label><input id="nr-req" type="text"></div><div class="full"><label>Description</label><input id="nr-desc" type="text"></div></div>'+
+      '<div style="margin-top:8px"><button class="btn small" data-act="addRole">Add role</button></div></div></div></div>';
+    out+='<p class="note">Everything lives in the <a href="'+esc(a.sheetUrl)+'" target="_blank" rel="noopener">Instructor Portal sheet</a>. You can edit it directly; don\'t rename the column headers.</p>';
+    return out;
+  }
+
+  // ---------- actions ----------
+  function run(btn, p, okMsg, after){
+    busy(btn,true);
+    return p.then(function(r){ if(okMsg) toast(typeof okMsg==='function'?okMsg(r):okMsg); if(after) after(r); return refresh(); })
+      .catch(function(e){ toast(e.message); busy(btn,false); });
+  }
+  function ics(r){
+    var d=r.date.replace(/-/g,''), z=function(t){ return (t||'0000').padStart(4,'0')+'00'; };
+    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ResQ Education//Instructor Portal//EN','BEGIN:VEVENT','UID:'+r.id+'@instructors.resqedu.com',
+      'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z','DTSTART;TZID=America/Chicago:'+d+'T'+z(r.call),'DTEND;TZID=America/Chicago:'+d+'T'+z(r.release),
+      'SUMMARY:ResQ '+r.role+' - '+r.course.replace('Accelerated EMT — ','EMT ')+' Day '+r.day,'LOCATION:'+(r.location||''),'DESCRIPTION:'+((r.topic||'')+(r.notes?' | '+r.notes:'')).replace(/[,;]/g,' '),'END:VEVENT','END:VCALENDAR'];
+    var blob=new Blob([lines.join('\r\n')],{type:'text/calendar'}), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='resq-'+r.date+'-'+r.block+'.ics'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function csv(){
+    var a=S.data.admin, rows=[['Date','Instructor','Email','Course','Day','Block','Role','Call','Release','Amount','Status','Paid on']];
+    a.requests.filter(function(r){ return r.status==='Approved' && (S.payCourse==='All'||r.courseId===S.payCourse) && (S.payFilter==='All'||r.pay===S.payFilter); })
+      .forEach(function(r){ rows.push([r.date,r.name,r.email,r.course,r.day,r.block,r.role,r.call,r.release,r.amount,r.pay,r.paidOn]); });
+    var text=rows.map(function(r){ return r.map(function(c){ c=String(c==null?'':c); return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(','); }).join('\n');
+    var blob=new Blob([text],{type:'text/csv'}), el=document.createElement('a'); el.href=URL.createObjectURL(blob); el.download='resq-instructor-pay-'+S.payFilter.toLowerCase()+'.csv'; document.body.appendChild(el); el.click(); el.remove();
+  }
+
+  document.addEventListener('click', function(ev){
+    var b=ev.target.closest('[data-act]'); if(!b) return;
+    var act=b.dataset.act, id=b.dataset.id, k=b.dataset.k;
+    if(b.tagName==='INPUT') return;
+    if(act==='tab'){ S.tab=b.dataset.v; S.dropFor=null; render(); window.scrollTo(0,0); return; }
+    if(act==='chip'){ S[b.dataset.k]=b.dataset.v; render(); return; }
+    if(act==='retry'){ start(); return; }
+    if(act==='gomine'){ S.tab='mine'; S.mineFilter='Upcoming'; render(); window.scrollTo(0,0); return; }
+    if(act==='request') return run(b, authed('apiRequestSlot',id,''), function(r){ return r.status==='Waitlist'?'You\'re #'+r.position+' on the waitlist':'Held for you. Pending approval.'; });
+    if(act==='dropAsk'){ S.dropFor=id; render(); var e=$('drop-reason'); if(e) e.focus(); return; }
+    if(act==='dropCancel'){ S.dropFor=null; render(); return; }
+    if(act==='drop'){ var reason=val('drop-reason'); S.dropFor=null; return run(b, authed('apiDrop',id,reason), function(r){ return r.status==='Dropped'?'Released':r.status==='Approved'?'You\'re keeping the slot':'Drop request sent to ResQ'; }); }
+    if(act==='ics'){ var r=S.data.requests.filter(function(x){return x.id===id;})[0]; if(r) ics(r); return; }
+    if(act==='saveProfile') return run(b, authed('apiUpdateProfile',{name:val('pf-name'),phone:val('pf-phone'),about:val('pf-about'),credentials:checked('pf-cred')}),'Saved');
+    if(act==='upload'){
+      var f=$('up-file').files[0]; if(!val('up-cred')){ toast('Pick which certification this is.'); return; } if(!f){ toast('Pick a file first.'); return; }
+      if(f.size>4*1024*1024){ toast('That file is over 4 MB. Try a smaller photo or PDF.'); return; }
+      var fr=new FileReader(); busy(b,true,'Uploading…');
+      fr.onload=function(){ busy(b,false); run(b, authed('apiUploadCert',{credential:val('up-cred'),expires:val('up-exp'),fileName:f.name,mime:f.type||'application/pdf',data:fr.result}),'Uploaded'); };
+      fr.readAsDataURL(f); return;
+    }
+    // admin
+    if(act==='req') return run(b, authed('apiAdminRequest',id,b.dataset.op), {approve:'Approved',decline:'Declined',approveDrop:'Drop approved',denyDrop:'Kept on the schedule',unpaid:'Marked unpaid'}[b.dataset.op]);
+    if(act==='clearRole'){
+      var ins=S.data.admin.instructors.filter(function(i){return i.email===b.dataset.email;})[0];
+      return run(b, authed('apiAdminInstructor',b.dataset.email,{roles:ins.roles.concat([b.dataset.role])}).then(function(){ return authed('apiAdminRequest',id,'approve'); }),'Role cleared and slot approved');
+    }
+    if(act==='ins'){
+      var ch={roles:checked(b.dataset.cls)}; var n=$('note-'+b.dataset.cls); if(n) ch.notes=n.value;
+      if(b.dataset.op!=='save') ch.status=b.dataset.op;
+      return run(b, authed('apiAdminInstructor',b.dataset.email,ch), b.dataset.op==='save'?'Saved':'Account '+b.dataset.op.toLowerCase());
+    }
+    if(act==='saveCourse'){
+      var c={name:val('cf-name'),start:val('cf-start'),end:val('cf-end'),location:val('cf-loc'),students:val('cf-stu'),status:val('cf-status'),description:val('cf-desc')}; if(id) c.id=id;
+      return run(b, authed('apiAdminSaveCourse',c), id?'Course saved':'Course created', function(r){ S.bCourse=r.id; });
+    }
+    if(act==='bulkPay') return run(b, authed('apiAdminBulkPay',S.bCourse,val('bp-role'),val('bp-block'),val('bp-pay')), function(r){ return 'Pay set on '+r.updated+' slots'; });
+    if(act==='copyCourse') return run(b, authed('apiAdminCopyCourse',S.bCourse,val('cp-name'),val('cp-start')), function(r){ return 'Copied '+r.sessions+' blocks and '+r.slots+' slots'; }, function(r){ S.bCourse=r.id; });
+    if(act==='addSess') return run(b, authed('apiAdminSaveSession',{courseId:S.bCourse,day:val('ns-day'),date:val('ns-date'),block:val('ns-block'),start:val('ns-start'),end:val('ns-end'),topic:val('ns-topic')}),'Block added', function(r){ S.openSess[r.id]=true; });
+    if(act==='saveSess') return run(b, authed('apiAdminSaveSession',{id:id,day:val('se-day-'+k),date:val('se-date-'+k),block:val('se-block-'+k),start:val('se-start-'+k),end:val('se-end-'+k),topic:val('se-topic-'+k),status:val('se-status-'+k)}),'Block saved');
+    if(act==='saveSlot') return run(b, authed('apiAdminSaveSlot',{id:id,openings:val('sl-open-'+k),pay:val('sl-pay-'+k),call:val('sl-call-'+k),release:val('sl-rel-'+k),notes:val('sl-notes-'+k),status:val('sl-status-'+k)}),'Slot saved');
+    if(act==='addSlot') return run(b, authed('apiAdminSaveSlot',{sessionId:id,role:val('ns-role-'+k),openings:val('ns-open-'+k),pay:val('ns-pay-'+k),call:val('ns-call-'+k),release:val('ns-rel-'+k),notes:val('ns-notes-'+k)}),'Slot added');
+    if(act==='assignOpen'){ S.assignFor=id; render(); return; }
+    if(act==='assign'){ S.assignFor=null; return run(b, authed('apiAdminAssign',id,val('as-'+k)),'Assigned and approved'); }
+    if(act==='paid') return run(b, authed('apiAdminRequest',id,'paid',val('amt-'+k)),'Marked paid');
+    if(act==='amount') return run(b, authed('apiAdminRequest',id,'amount',val('amt-'+k)),'Amount saved');
+    if(act==='csv'){ csv(); return; }
+    if(act==='saveSettings'){
+      var ch2={}; Array.prototype.forEach.call(document.querySelectorAll('.set-t'),function(e){ ch2[e.dataset.key]=e.checked; });
+      ch2['Reminder days before session']=val('set-days'); ch2['Admin alert emails']=val('set-admins');
+      return run(b, authed('apiAdminSettings',ch2),'Settings saved');
+    }
+    if(act==='saveRole'){ var i=b.dataset.i, r2=S.data.config.roles[i];
+      return run(b, authed('apiAdminSaveRole',{original:r2.name,description:val('ro-desc-'+i),requirements:val('ro-req-'+i),openToAll:$('ro-open-'+i).checked,active:$('ro-act-'+i).checked}),'Role saved'); }
+    if(act==='addRole') return run(b, authed('apiAdminSaveRole',{name:val('nr-name'),requirements:val('nr-req'),description:val('nr-desc')}),'Role added');
+  });
+  document.addEventListener('change', function(ev){
+    var t=ev.target;
+    if(t.dataset && t.dataset.act==='onlyOpen'){ S.onlyOpen=t.checked; render(); }
+  });
+  document.addEventListener('toggle', function(ev){
+    var d=ev.target; if(d.dataset && d.dataset.sess) S.openSess[d.dataset.sess]=d.open;
+  }, true);
+  document.addEventListener('input', function(ev){
+    if(ev.target.id==='ins-search'){ S.insSearch=ev.target.value; var pos=ev.target.selectionStart; render(); var e=$('ins-search'); if(e){ e.focus(); e.setSelectionRange(pos,pos); } }
+  });
+
+  $('su-creds').innerHTML = credChecks('su-cred',[]);
+  $('form-email').addEventListener('submit', sendCode);
+  $('form-signup').addEventListener('submit', signup);
+  $('form-code').addEventListener('submit', verify);
+  $('btn-show-signup').addEventListener('click', function(){ $('su-email').value=$('email').value; setMsg(''); step('signup'); });
+  $('btn-signup-back').addEventListener('click', function(){ setMsg(''); step('email'); });
+  $('btn-back').addEventListener('click', function(){ setMsg(''); step('email'); });
+  $('btn-resend').addEventListener('click', function(){ $('email').value=pendingEmail; step('email'); sendCode(); });
+  $('btn-logout').addEventListener('click', function(){ setToken(null); S.data=null; showLogin(''); });
+  window.__portalLogin = function(t){ setToken(t); S.tab='slots'; S.dropFor=null; S.assignFor=null; start(); };
+  window.__portalStart = function(){ if(getToken()) start(); else showLogin(''); };
+  if(!window.__DEMO_API) window.__portalStart();
+})();
+</script>
+</body>
+</html>
