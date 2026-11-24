@@ -325,7 +325,7 @@
     if(withFiles) h+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="track" data-v="Instructor"><b>Instructor or evaluator</b><span>Teach, assist, run stations or evaluate</span></button>'+
       '<button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="track" data-v="Patient"><b>Patient volunteer only</b><span>Play patients in scenarios and exams</span></button></div>';
     h+='<fieldset><legend>Contact</legend><div class="form-grid">'+inp(px+'-name','Full name',a.name,'text','full',' autocomplete="name"')+
-      (withFiles?inp(px+'-email','Email',a.email,'email','',' autocomplete="email"'):'')+inp(px+'-phone','Mobile phone',a.phone,'tel','',' autocomplete="tel"')+
+      (withFiles?inp(px+'-email','Email',a.email,'email','',' autocomplete="email"'):inp(px+'-email','Email (your login)',a.email,'email','',' disabled title="This is the email you log in with. Contact ResQ to change it."'))+inp(px+'-phone','Mobile phone',a.phone,'tel','',' autocomplete="tel"')+
       (track==='Instructor'?inp(px+'-address','Mailing address',a.address,'text','full',' autocomplete="street-address"'):'')+
       inp(px+'-emname','Emergency contact name',a.emergencyName)+inp(px+'-emphone','Emergency contact phone',a.emergencyPhone,'tel')+'</div></fieldset>';
     if(track==='Instructor'){
@@ -464,7 +464,7 @@
     } else out+='<p class="note">Uploads aren\'t switched on yet. Email your documents to '+esc(d.config.contact)+'.</p>';
     out+='</div><div class="card"><h3>Application</h3>'+(a?'<p class="small muted">Submitted '+esc(a.submitted)+(a.updated&&a.updated!==a.submitted?', updated '+esc(a.updated):'')+'</p>':'<div class="warnbox">You haven\'t submitted an application yet. Fill this out so ResQ can approve you.</div>');
     if(!a) out+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="appTrack" data-v="Instructor"><b>Instructor or evaluator</b></button><button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="appTrack" data-v="Patient"><b>Patient volunteer only</b></button></div>';
-    var pre=Object.assign({}, a||{}, {name:me.name, phone:me.phone, credentials:me.credentials});
+    var pre=Object.assign({}, a||{}, {name:me.name, email:me.email, phone:me.phone, credentials:me.credentials});
     out+=appForm('ap', pre, track, false)+'<button class="btn" data-act="saveApp" data-track="'+track+'">'+(a?'Save changes':'Submit application')+'</button></div></div>';
     return out;
   }
