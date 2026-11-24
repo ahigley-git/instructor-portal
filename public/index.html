@@ -276,6 +276,13 @@
   </div>
 </div>
 
+<div id="manage" class="login-wrap hidden">
+  <div class="login wide">
+    <div class="login-top"><div class="eyebrow">ResQ Education</div><h1>Email <span>settings</span></h1></div>
+    <div class="login-body" id="manage-body"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+  </div>
+</div>
+
 <div id="app" class="hidden">
   <header class="bar">
     <div class="bar-in">
@@ -487,6 +494,29 @@
   }
   function checkChips(cl){ return '<div class="cl">'+cl.items.map(function(i){ return '<span class="'+(i.done?'y':'n')+'">'+(i.done?'✓ ':'✗ ')+esc(i.label)+'</span>'; }).join('')+'</div>'; }
 
+  // ---------- email settings ----------
+  var ALERT_DESC={'New course':'A new course opens for sign-up','Openings added':'ResQ adds openings to a course that\'s already open','Near-term openings':'A spot opens up in the next 2 weeks (someone dropped)'};
+  function prefsForm(px, pr, types, digests){
+    pr=pr||{alerts:['New course'],digest:'Off',reminders:true}; types=types||Object.keys(ALERT_DESC); digests=digests||['Off','Weekly','Every 2 weeks','Monthly'];
+    return '<label>Email me when…</label><div style="margin-bottom:12px">'+types.map(function(t){ return '<label class="switch"><input type="checkbox" class="'+px+'-alert" value="'+esc(t)+'"'+(pr.alerts.indexOf(t)>=0?' checked':'')+'><span><b>'+esc(t)+'</b><div class="d">'+esc(ALERT_DESC[t]||'')+'</div></span></label>'; }).join('')+'</div>'+
+      '<label>List of all open slots that fit me</label><div class="filters" style="margin-bottom:12px">'+digests.map(function(dg){ return '<label class="chip'+(pr.digest===dg?' on':'')+'" style="cursor:pointer"><input type="radio" name="'+px+'-digest" value="'+esc(dg)+'"'+(pr.digest===dg?' checked':'')+' style="position:absolute;opacity:0;width:0;height:0" data-act="digestPick"> '+esc(dg)+'</label>'; }).join('')+'</div>'+
+      '<label class="switch"><input type="checkbox" id="'+px+'-rem"'+(pr.reminders?' checked':'')+'><span><b>Session reminders</b><div class="d">A reminder a few days before each slot I\'m approved for</div></span></label>'+
+      '<p class="note">Alerts and lists only include open slots in roles you\'re cleared for (or applied for, until you\'re approved). Emails about your own requests (approved, declined, waitlist) always send.</p>';
+  }
+  function readPrefs(px){ var d=document.querySelector('input[name="'+px+'-digest"]:checked'); return { alerts:checked(px+'-alert'), digest:d?d.value:'Off', reminders:!!($(px+'-rem')&&$(px+'-rem').checked) }; }
+  function showManage(t){
+    $('login').classList.add('hidden'); $('app').classList.add('hidden'); $('manage').classList.remove('hidden');
+    api('apiPrefsGet',t).then(function(p){
+      $('manage-body').innerHTML='<p>Email settings for <b>'+esc(p.name)+'</b> ('+esc(p.email)+').</p>'+prefsForm('mg',p,p.alertTypes,p.digests)+
+        '<div class="row-tools" style="margin-top:12px"><button class="btn" id="mg-save" type="button">Save settings</button><button class="btn ghost" id="mg-off" type="button">Turn off all course emails</button></div><div id="mg-msg" class="msg"></div>'+
+        '<p class="small" style="margin-top:16px"><a href="/">Go to the Instructor Portal</a></p>';
+      var save=function(prefs,btn){ busy(btn,true,'Saving…'); api('apiPrefsSave',t,prefs).then(function(){ $('mg-msg').textContent='Saved.'; $('mg-msg').className='msg ok'; }).catch(function(e){ $('mg-msg').textContent=e.message; $('mg-msg').className='msg err'; }).then(function(){ busy(btn,false); }); };
+      $('mg-save').addEventListener('click',function(){ save(readPrefs('mg'),$('mg-save')); });
+      $('mg-off').addEventListener('click',function(){ Array.prototype.forEach.call(document.querySelectorAll('.mg-alert'),function(e){e.checked=false;}); var o=document.querySelector('input[name="mg-digest"][value="Off"]'); if(o){ o.checked=true; syncDigestChips('mg'); } save({alerts:[],digest:'Off',reminders:$('mg-rem').checked},$('mg-off')); });
+    }).catch(function(e){ $('manage-body').innerHTML='<p class="msg err">'+esc(e.message)+'</p><p><a href="/">Go to the Instructor Portal</a></p>'; });
+  }
+  function syncDigestChips(px){ Array.prototype.forEach.call(document.querySelectorAll('input[name="'+px+'-digest"]'),function(r){ r.parentNode.classList.toggle('on',r.checked); }); }
+
   // ---------- Open slots ----------
   function vSlots(){
     var d=S.data, me=d.me, out='';
@@ -592,6 +622,7 @@
     if(!a) out+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="appTrack" data-v="Instructor"><b>Instructor or evaluator</b></button><button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="appTrack" data-v="Patient"><b>Patient volunteer only</b></button></div>';
     var pre=Object.assign({}, a||{}, {name:me.name, email:me.email, phone:me.phone, credentials:me.credentials});
     out+=appForm('ap', pre, track, false)+'<button class="btn" data-act="saveApp" data-track="'+track+'">'+(a?'Save changes':'Submit application')+'</button></div></div>';
+    out+='<div class="card"><h3>Email settings</h3>'+prefsForm('pf', me.prefs, d.config.alertTypes, d.config.digests)+'<button class="btn" data-act="savePrefs">Save email settings</button></div>';
     return out;
   }
 
@@ -673,6 +704,7 @@
     var certs = i.certs.length ? i.certs.map(function(c){ return (c.link?'<a href="'+esc(c.link)+'" target="_blank" rel="noopener">'+esc(c.credential)+'</a>':esc(c.credential))+(c.expires?' <span class="muted">(exp '+esc(c.expires)+')</span>':''); }).join(' · ') : '<span class="muted">No cards uploaded</span>';
     return '<div class="ins-card"><div class="ins-top"><div><div class="t">'+esc(i.name)+' '+pill(i.status)+(i.admin?' '+pill('Open','Admin'):'')+'</div><div class="small muted">'+esc(i.email)+' · '+esc(i.phone)+' · applied '+esc(i.applied)+'</div>'+
       '<div class="small">Certifications: '+esc(i.credentials.join(', ')||'-')+'</div><div class="small">Cards: '+certs+(i.folder?' · <a href="'+esc(i.folder)+'" target="_blank" rel="noopener">Drive folder</a>':'')+'</div>'+
+      '<div class="small muted">Emails: '+(i.prefs.alerts.length?esc(i.prefs.alerts.join(', ')):'no alerts')+' · list '+esc(i.prefs.digest.toLowerCase())+(i.prefs.reminders?'':' · reminders off')+'</div>'+
       checkChips(i.checklist)+appSummary(i)+'</div>'+
       '<div class="small" style="text-align:right">'+i.holding+' active request'+(i.holding===1?'':'s')+'<br>'+i.earnings.approved+' approved · '+money(i.earnings.owed)+' owed</div></div>'+
       '<div style="margin-top:10px"><label>Cleared for roles</label><div class="checks">'+roleChecks(cls,i.roles)+'</div></div>'+
@@ -801,10 +833,11 @@
     var a=S.data.admin, set={}; a.settings.forEach(function(s){ set[s.key]=s.value; });
     var toggles=[['Email admins: new instructor signup','When someone creates an account'],['Email admins: new slot request','When someone requests or waitlists for a slot'],['Email admins: drop request','When someone asks to drop an approved slot'],
       ['Email instructor: account approved or declined','Account approved, declined or made inactive'],['Email instructor: slot status change','Slot held, approved, declined, waitlisted, moved up or dropped'],
-      ['Email instructor: session reminder','Reminder before each approved slot'],['Email instructor: marked paid','When you mark a slot paid']];
+      ['Email instructor: session reminder','Reminder before each approved slot'],['Email instructor: marked paid','When you mark a slot paid'],
+      ['Email instructors: opening alerts','New-course, added-openings and short-notice alerts. Each person picks which they get'],['Email instructors: open-slot digests','Weekly, every-2-weeks or monthly open-slot lists. Each person picks how often']];
     var out='<h2>Settings</h2><p class="sub">Email alerts and roles. Login-code emails always send.</p><div class="grid g2"><div class="card"><h3>Emails</h3>';
     out+=toggles.map(function(t,i){ var v=set[t[0]]; var isOn = v===undefined || v==='' || !/^(off|no|false|0)$/i.test(String(v));
-      return '<label class="switch"><input type="checkbox" class="set-t" data-key="'+esc(t[0])+'"'+(isOn?' checked':'')+'><span><b>'+esc(t[0].replace(/^Email (admins|instructor): /,''))+'</b> <span class="small muted">'+(t[0].indexOf('admins')>0?'to admins':'to instructor')+'</span><div class="d">'+esc(t[1])+'</div></span></label>'; }).join('');
+      return '<label class="switch"><input type="checkbox" class="set-t" data-key="'+esc(t[0])+'"'+(isOn?' checked':'')+'><span><b>'+esc(t[0].replace(/^Email (admins|instructors?): /,''))+'</b> <span class="small muted">'+(t[0].indexOf('admins')>0?'to admins':'to instructors')+'</span><div class="d">'+esc(t[1])+'</div></span></label>'; }).join('');
     out+='<div class="form-grid" style="margin-top:10px"><div><label>Reminder days before session</label><input id="set-days" type="number" min="0" max="30" value="'+esc(set['Reminder days before session']||3)+'"></div>'+
       '<div class="full"><label>Admin alert emails (comma-separated; blank = everyone on the admin list)</label><input id="set-admins" type="text" value="'+esc(set['Admin alert emails']||'')+'"></div></div>'+
       '<div style="margin-top:12px"><button class="btn" data-act="saveSettings">Save email settings</button></div></div>';
@@ -854,6 +887,7 @@
     if(act==='dropCancel'){ S.dropFor=null; render(); return; }
     if(act==='drop'){ var reason=val('drop-reason'); S.dropFor=null; return run(b, authed('apiDrop',id,reason), function(r){ return r.status==='Dropped'?'Released':r.status==='Approved'?'You\'re keeping the slot':'Drop request sent to ResQ'; }); }
     if(act==='ics'){ var r=S.data.requests.filter(function(x){return x.id===id;})[0]; if(r) ics(r); return; }
+    if(act==='savePrefs') return run(b, authed('apiSaveMyPrefs', readPrefs('pf')),'Email settings saved');
     if(act==='saveApp') return run(b, authed('apiSaveApplication', readAppForm('ap', b.dataset.track)),'Application saved');
     if(act==='appTrack'){ S.appTrack=b.dataset.v; render(); return; }
     if(act==='track'){ S.track=b.dataset.v; $('su-form').innerHTML=appForm('su',{name:val('su-name'),email:val('su-email'),phone:val('su-phone'),emergencyName:val('su-emname'),emergencyPhone:val('su-emphone')},S.track,true); return; }
@@ -905,6 +939,7 @@
     var t=ev.target;
     if(t.dataset && t.dataset.act==='onlyOpen'){ S.onlyOpen=t.checked; render(); }
     if(t.dataset && t.dataset.act==='calGaps'){ S.calGaps=t.checked; render(); }
+    if(t.dataset && t.dataset.act==='digestPick'){ syncDigestChips(t.name.replace('-digest','')); }
   });
   document.addEventListener('toggle', function(ev){
     var d=ev.target; if(d.dataset && d.dataset.sess) S.openSess[d.dataset.sess]=d.open;
@@ -922,7 +957,9 @@
   $('btn-resend').addEventListener('click', function(){ $('email').value=pendingEmail; step('email'); sendCode(); });
   $('btn-logout').addEventListener('click', function(){ setToken(null); S.data=null; showLogin(''); });
   window.__portalLogin = function(t){ setToken(t); S.tab='slots'; S.dropFor=null; S.assignFor=null; start(); };
-  window.__portalStart = function(){ if(getToken()) start(); else showLogin(''); };
+  window.__portalStart = function(){
+    var mg=null; try{ mg=new URLSearchParams(location.search).get('manage'); }catch(e){}
+    if(mg) return showManage(mg); if(getToken()) start(); else showLogin(''); };
   if(!window.__DEMO_API) window.__portalStart();
 })();
 </script>

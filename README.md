@@ -7,6 +7,7 @@ Instructor sign-up portal for ResQ Education, served at **instructors.resqedu.co
 - Pending and waitlisted requests can be released anytime. Dropping an **Approved** slot sends a drop request that an admin approves.
 - Each slot can follow enrollment (1 per 3 students, etc.). Admins change enrollment once and preview/apply the new openings for the whole course.
 - A Calendar tab shows every block with filled/needed per role.
+- Instructors pick their own opening emails: new-course, added-openings and short-notice alerts, and a weekly / every-2-weeks / monthly digest. Every instructor email has a "Manage email settings" link that works without logging in. Digests go out from the same daily scheduled function as reminders.
 - Admins approve accounts (with a checklist of missing application items), tick which roles each person is cleared for, approve or decline slot requests, build courses, blocks and slots, set flat pay per slot, mark slots paid, and turn each email type on or off.
 
 ## Files

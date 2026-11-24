@@ -27,7 +27,8 @@ http.createServer(async (req, res) => {
   if (req.url === '/__mail') { res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify(ctx.mailer.sent)); }
   if (req.url === '/__clear') { for (const k of [...ctx.kv._m.keys()]) if (k.startsWith('rl:')) ctx.kv._m.delete(k); return res.end('ok'); }
   if (req.url === '/__reminders') { res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify(await ctx.portal.runReminders())); }
-  const f = path.join(root, req.url === '/' ? 'index.html' : req.url.split('?')[0]);
+  const u = req.url.split('?')[0];
+  const f = path.join(root, u === '/' ? 'index.html' : u);
   if (!f.startsWith(root) || !fs.existsSync(f)) { res.statusCode = 404; return res.end('not found'); }
   res.setHeader('Content-Type', types[path.extname(f)] || 'application/octet-stream');
   fs.createReadStream(f).pipe(res);

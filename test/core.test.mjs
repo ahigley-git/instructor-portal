@@ -279,3 +279,58 @@ test('staffing follows enrollment: preview, apply, overstaffing kept', async () 
   assert.equal((await ctx.portal.apiRequestSlot(w, 'EMT-2027-01-D05-PM-AST')).status, 'Pending');
   await rejects(ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 0, false), /number of students/);
 });
+
+test('opening alerts, digests and the manage-settings link', async () => {
+  const ctx = makePortal();
+  const admin = await login(ctx, 'admin@resqedu.com');
+  const a = await signup(ctx, 'Ann Assist', 'ann@x.com'); // wants Assistant Instructor, default alerts: New course
+  const p = await signup(ctx, 'Pat Patient', 'pat@x.com', ['Student / pre-health (patient role)']);
+  const ad = await ctx.portal.apiGetData(admin);
+  assert.deepEqual(ad.admin.instructors.find((i) => i.email === 'ann@x.com').prefs, { alerts: ['New course'], digest: 'Off', reminders: true });
+  // every instructor email carries a working manage link
+  const mail = ctx.mailer.sent.filter((m) => m.to === 'ann@x.com').pop();
+  const link = /\?manage=([^"]+)"/.exec(mail.html);
+  assert.ok(link, 'manage link present');
+  const t = decodeURIComponent(link[1]);
+  assert.equal((await ctx.portal.apiPrefsGet(t)).email, 'ann@x.com');
+  await rejects(ctx.portal.apiPrefsGet(t.slice(0, -2) + 'xx'), /isn't valid/);
+  assert.ok(!ctx.mailer.sent.filter((m) => m.to === 'admin@resqedu.com').some((m) => /manage=/.test(m.html)));
+  // copy a course (hidden), open it -> New course alert to both, each with only their roles
+  const c = await ctx.portal.apiAdminCopyCourse(admin, 'EMT-2027-01', 'Accelerated EMT — Sept 2027', '2027-09-13');
+  let before = ctx.mailer.sent.length;
+  const res = await ctx.portal.apiAdminSaveCourse(admin, { id: c.id, status: 'Open' });
+  assert.equal(res.alerted, 2);
+  const newMail = ctx.mailer.sent.slice(before);
+  const annMail = newMail.find((m) => m.to === 'ann@x.com'), patMail = newMail.find((m) => m.to === 'pat@x.com');
+  assert.match(annMail.subject, /New ResQ course open for sign-up: Accelerated EMT — Sept 2027/);
+  assert.match(annMail.html, /Assistant Instructor/); assert.doesNotMatch(annMail.html, /<b>Patient<\/b>/);
+  assert.match(patMail.html, /<b>Patient<\/b>/); assert.doesNotMatch(patMail.html, /Assistant Instructor/);
+  // Ann opts into openings-added + weekly digest via the link; Pat turns alerts off
+  await ctx.portal.apiPrefsSave(t, { alerts: ['Openings added', 'Near-term openings'], digest: 'Weekly', reminders: false });
+  const pt = decodeURIComponent(/\?manage=([^"]+)"/.exec(patMail.html)[1]);
+  await ctx.portal.apiPrefsSave(pt, { alerts: [], digest: 'Off' });
+  before = ctx.mailer.sent.length;
+  await ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 13, true);
+  let out = ctx.mailer.sent.slice(before);
+  assert.equal(out.filter((m) => m.to === 'ann@x.com' && /More openings added/.test(m.subject)).length, 1);
+  assert.equal(out.filter((m) => m.to === 'pat@x.com').length, 0);
+  // digest goes once, then waits a week
+  assert.equal((await ctx.portal.runDigests()).sent, 1);
+  assert.equal((await ctx.portal.runDigests()).sent, 0);
+  await ctx.portal.apiAdminSettings(admin, { 'Email instructors: open-slot digests': false });
+  // near-term: a dropped slot within 14 days alerts others, not the person who dropped
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  const soon = new Date(Date.parse(today + 'T00:00:00Z') + 5 * 86400000).toISOString().slice(0, 10);
+  await ctx.portal.apiAdminSaveSession(admin, { id: 'EMT-2027-01-D02-PM', date: soon });
+  const b = await signup(ctx, 'Bo Bee', 'bo@x.com');
+  await ctx.portal.apiRequestSlot(b, 'EMT-2027-01-D02-PM-AST');
+  const bReq = (await ctx.portal.apiGetData(b)).requests.find((r) => r.slotId === 'EMT-2027-01-D02-PM-AST');
+  before = ctx.mailer.sent.length;
+  await ctx.portal.apiDrop(b, bReq.id);
+  out = ctx.mailer.sent.slice(before);
+  assert.ok(out.some((m) => m.to === 'ann@x.com' && /Short-notice opening/.test(m.subject)));
+  assert.ok(!out.some((m) => m.to === 'bo@x.com' && /Short-notice/.test(m.subject)));
+  // logged-in save + personal reminder opt-out respected
+  await ctx.portal.apiSaveMyPrefs(a, { alerts: ['New course'], digest: 'Monthly', reminders: true });
+  assert.deepEqual((await ctx.portal.apiGetData(a)).me.prefs, { alerts: ['New course'], digest: 'Monthly', reminders: true });
+});
