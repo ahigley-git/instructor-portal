@@ -13,12 +13,14 @@ const AGREE_I = ['Instructor code of conduct', 'Independent contractor and pay t
 export const fullApp = (name, email, creds = ['EMT'], extra = {}) => ({ track: 'Instructor', name, email, phone: '651-555-0100', address: '1 Main St, Cottage Grove, MN',
   emergencyName: 'Sam Doe', emergencyPhone: '651-555-0199', credentials: creds, rolesWanted: ['Assistant Instructor'], days: ['Mon', 'Sat'], availabilityNotes: 'Off B shift',
   licenses: { mnEms: '123456', mnEmsExp: '2028-03-31', nremt: 'E1234567', nremtExp: '2028-03-31' }, agency: 'Cottage Grove FD', years: '5', teaching: 'CPR instructor',
-  refs: [{ name: 'Ref One', relationship: 'Captain', phone: '651-555-0001' }, { name: 'Ref Two', relationship: 'Medic', email: 'r2@x.com' }], agreed: AGREE_I, ...extra });
+  refs: [{ name: 'Ref One', relationship: 'Captain', phone: '651-555-0001', email: 'r1@x.com' }, { name: 'Ref Two', relationship: 'Medic', phone: '651-555-0002', email: 'r2@x.com' }], agreed: AGREE_I, ...extra });
+export const patientApp = (name, email, extra = {}) => ({ track: 'Patient', name, email, phone: '651-555-0100', address: '2 Elm St, St Paul, MN', dob: '2000-05-01',
+  emergencyName: 'Mom', emergencyPhone: '651-555-0102', agreed: ['Patient code of conduct and waiver', 'Independent contractor and pay terms'], ...extra });
 // Signs someone up; instructor-track accounts are approved (and cleared for teaching roles) unless opt.pending.
 async function signup(ctx, name, email, creds = ['EMT'], opt = {}) {
   clearRl(ctx);
   const patient = creds.includes('Student / pre-health (patient role)');
-  await ctx.portal.apiSignup(patient ? { track: 'Patient', name, email, phone: '651-555-0100', emergencyName: 'Mom', emergencyPhone: '651-555-0102', agreed: ['Patient code of conduct and waiver', 'Independent contractor and pay terms'] } : fullApp(name, email, creds));
+  await ctx.portal.apiSignup(patient ? patientApp(name, email) : fullApp(name, email, creds));
   const token = (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
   if (!patient && !opt.pending) {
     ctx._adm = ctx._adm || await login(ctx, 'admin@resqedu.com');
@@ -50,9 +52,15 @@ test('signup, login and pending accounts', async () => {
   assert.equal(ctx.mailer.sent.length, 0);
   await rejects(ctx.portal.apiSignup(fullApp('Jo', 'jo@x.com')), /first and last/);
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', [])), /certification/);
-  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { refs: [{ name: 'A', phone: '1' }] })), /two professional references/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { refs: [{ name: 'A', phone: '1' }] })), /reference 1's name, relationship, phone and email; and reference 2/);
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { agreed: ['Instructor code of conduct'] })), /Independent contractor/);
-  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { licenses: {} })), /license or certification number/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { licenses: {} })), /MN EMS license number; your MN EMS license expiration date; your NREMT number/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT', 'AHA BLS Instructor'])), /AHA instructor ID number/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['RN'], { licenses: {} })), /type of your other license \(e.g. MN RN\); your other license number/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['Firefighter'], { licenses: { aha: '12345' } })), /AHA instructor ID expiration date/);
+  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { years: '', teaching: 'hi' })), /years in EMS; and your teaching experience/);
+  await rejects(ctx.portal.apiSignup(patientApp('Kid Patient', 'kid@x.com', { dob: '2012-01-01' })), /18 or older/);
+  await rejects(ctx.portal.apiSignup(patientApp('No Dob', 'nd@x.com', { dob: '', address: '' })), /your mailing address; .*and your date of birth/);
   const t = await signup(ctx, 'Jo Smith', 'Jo@X.com', ['EMT'], { pending: true });
   assert.ok(ctx.mailer.sent.some((m) => m.to === 'admin@resqedu.com' && /New instructor application/.test(m.subject)));
   const d = await ctx.portal.apiGetData(t);
@@ -267,7 +275,7 @@ test('application checklist, private pay forms, patient track', async () => {
   d = await ctx.portal.apiGetData(p);
   assert.equal(d.me.checklist.track, 'Patient');
   assert.equal(d.me.checklist.complete, true);
-  await rejects(ctx.portal.apiSignup({ track: 'Patient', name: 'No Waiver', email: 'nw@x.com', phone: '1', emergencyName: 'A', emergencyPhone: '2', agreed: [] }), /Read and check/);
+  await rejects(ctx.portal.apiSignup({ track: 'Patient', name: 'No Waiver', email: 'nw@x.com', phone: '1', emergencyName: 'A', emergencyPhone: '2', agreed: [] }), /agreement to/);
 });
 
 test('staffing follows enrollment: preview, apply, overstaffing kept', async () => {
@@ -366,7 +374,7 @@ test('a patient can apply to instruct, keeps patient access, and gets approved o
   const p = await signup(ctx, 'Pat Patient', 'pat@x.com', ['Student / pre-health (patient role)']);
   await ctx.portal.apiAdminInstructor(admin, 'pat@x.com', { status: 'Approved' });
   await rejects(ctx.portal.apiSaveApplication(p, fullApp('Pat Patient', 'pat@x.com')), /Apply to be an instructor/);
-  await rejects(ctx.portal.apiApplyInstructor(p, fullApp('Pat Patient', 'pat@x.com', ['EMT'], { refs: [] })), /two professional references/);
+  await rejects(ctx.portal.apiApplyInstructor(p, fullApp('Pat Patient', 'pat@x.com', ['EMT'], { refs: [] })), /reference 1/);
   await ctx.portal.apiApplyInstructor(p, fullApp('Pat Patient', 'pat@x.com', ['EMT']));
   assert.ok(ctx.mailer.sent.some((m) => m.to === 'admin@resqedu.com' && /Instructor application from a patient/.test(m.subject)));
   let d = await ctx.portal.apiGetData(p);

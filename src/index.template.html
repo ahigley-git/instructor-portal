@@ -73,6 +73,9 @@
   .switch input{width:18px;height:18px}
   .switch .d{font-size:13px;color:var(--slate)}
   .login.wide{max-width:760px}
+  .req{color:var(--ember);font-weight:800}
+  .bad,input.bad,textarea.bad{border-color:var(--ember)!important;box-shadow:0 0 0 2px var(--ember-soft)}
+  .checks.bad,fieldset.bad{border-radius:8px;outline:2px solid var(--ember-soft)}
   input[type=date],input[type=number]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;outline:none;min-height:44px}
   .inline-form input[type=date],.inline-form input[type=number],td input[type=number]{width:auto;min-height:0;padding:7px 9px}
   fieldset{border:1px solid var(--line);border-radius:10px;padding:12px 14px 14px;margin:0 0 14px}
@@ -248,17 +251,12 @@
     api('apiPublicConfig').then(function(c){ S.pub=c; draw(); }).catch(function(e){ $('su-form').innerHTML='<p class="msg err">'+esc(e.message)+'</p>'; });
   }
   function signup(e){
-    e.preventDefault();
-    var p=readAppForm('su', S.track), files=[], tooBig=null;
-    if(S.track==='Instructor'){
-      var cred=val('su-certname')||'Certification card';
-      [['su-f-cert','Cert card'],['su-f-resume','Resume'],['su-f-w9','W-9'],['su-f-dd','Direct deposit']].forEach(function(x){
-        var el=$(x[0]); if(!el) return;
-        Array.prototype.forEach.call(el.files,function(f){ if(f.size>4*1024*1024) tooBig=f.name; files.push({kind:x[1],file:f,credential:cred}); });
-      });
-      if(tooBig){ setMsg(tooBig+' is over 4 MB. Pick a smaller photo or PDF.','err'); return; }
-    }
-    var btn=$('btn-signup'); busy(btn,true,'Submitting…'); setMsg('');
+    e.preventDefault(); setMsg('');
+    var p=checkAppForm('su', S.track, S.track==='Instructor');
+    if(!p){ setMsg('Some required items are missing. They\'re listed at the bottom of the form.','err'); return; }
+    var ff=filesFrom('su');
+    if(ff.tooBig){ setMsg(ff.tooBig+' is over 4 MB. Pick a smaller photo or PDF.','err'); return; }
+    var files=ff.files, btn=$('btn-signup'); busy(btn,true,'Submitting…');
     api('apiSignup',p).then(function(r){
       S.queued=files;
       $('login').querySelector('.login').classList.remove('wide');
@@ -331,47 +329,109 @@
   // ---------- application form ----------
   function cfgPub(){ return S.pub || (S.data && S.data.config) || {roles:[],agreements:[],days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']}; }
   function inp(id,label,v,type,cls,extra){ return '<div class="'+(cls||'')+'"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(v||'')+'"'+(extra||'')+'></div>'; }
-  function appForm(px, a, track, withFiles){
+  var REQ='<span class="req" title="Required">*</span>';
+  var EMS_CREDS=['EMR','EMT','AEMT','Paramedic'], AHA_CREDS=['AHA BLS Instructor','AHA ACLS/PALS Instructor'], OTHER_LIC_CREDS=['RN','Physician / PA / NP'];
+  // mode: 'signup' (track choice, documents and payroll uploads), 'upgrade' (documents), 'edit' (no uploads)
+  function appForm(px, a, track, mode){
+    if(mode===true) mode='signup'; if(!mode) mode='edit';
     a=a||{}; var c=cfgPub(), L=a.licenses||{}, refs=a.refs||[{},{}], agreed=a.agreements||'';
     var av=a.availability||'', days=(c.days||[]).filter(function(d){ return av.indexOf(d)>=0; }), avNotes=av.replace(/^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(, )?)+(\.\s*)?/,'');
-    var h='';
-    if(withFiles) h+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="track" data-v="Instructor"><b>Instructor or evaluator</b><span>Teach, assist, run stations or evaluate</span></button>'+
+    var h='<p class="small muted" style="margin:0 0 10px">Fields marked '+REQ+' are required.</p>';
+    if(mode==='signup') h+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="track" data-v="Instructor"><b>Instructor or evaluator</b><span>Teach, assist, run stations or evaluate</span></button>'+
       '<button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="track" data-v="Patient"><b>Patient (role player) only</b><span>Paid to play patients in scenarios and exams</span></button></div>';
-    h+='<fieldset><legend>Contact</legend><div class="form-grid">'+inp(px+'-name','Full name',a.name,'text','full',' autocomplete="name"')+
-      (withFiles?inp(px+'-email','Email',a.email,'email','',' autocomplete="email"'):inp(px+'-email','Email (your login)',a.email,'email','',' disabled title="This is the email you log in with. Contact ResQ to change it."'))+inp(px+'-phone','Mobile phone',a.phone,'tel','',' autocomplete="tel"')+
-      (track==='Instructor'?inp(px+'-address','Mailing address',a.address,'text','full',' autocomplete="street-address"'):'')+
-      inp(px+'-emname','Emergency contact name',a.emergencyName)+inp(px+'-emphone','Emergency contact phone',a.emergencyPhone,'tel')+'</div></fieldset>';
+    h+='<fieldset><legend>Contact</legend><div class="form-grid">'+inp(px+'-name','Full name '+REQ,a.name,'text','full',' autocomplete="name"')+
+      (mode==='signup'?inp(px+'-email','Email '+REQ,a.email,'email','',' autocomplete="email"'):inp(px+'-email','Email (your login)',a.email,'email','',' disabled title="This is the email you log in with. Contact ResQ to change it."'))+inp(px+'-phone','Mobile phone '+REQ,a.phone,'tel','',' autocomplete="tel"')+
+      inp(px+'-address','Mailing address '+REQ,a.address,'text','full',' autocomplete="street-address"')+
+      (track==='Patient'?inp(px+'-dob','Date of birth '+REQ+' <span class="small muted" style="font-weight:500">(patients must be 18 or older)</span>',a.dob,'date','',' autocomplete="bday"'):'')+
+      inp(px+'-emname','Emergency contact name '+REQ,a.emergencyName)+inp(px+'-emphone','Emergency contact phone '+REQ,a.emergencyPhone,'tel')+'</div></fieldset>';
     if(track==='Instructor'){
-      h+='<fieldset><legend>Certifications</legend><div class="checks">'+credChecks(px+'-cred',a.credentials||[])+'</div><div class="form-grid" style="margin-top:10px">'+
+      h+='<fieldset><legend>Certifications</legend><label>Certifications you hold '+REQ+'</label><div class="checks" id="'+px+'-creds">'+credChecks(px+'-cred',a.credentials||[])+'</div>'+
+        '<p class="small muted" style="margin:10px 0 0">Required with an expiration date: MN EMS and NREMT numbers if you hold EMR, EMT, AEMT or Paramedic; your AHA instructor ID if you\'re an AHA instructor; and your license if you\'re an RN, physician, PA or NP. Any number you enter needs its expiration date.</p>'+
+        '<div class="form-grid" style="margin-top:10px">'+
         inp(px+'-mnems','MN EMS license #',L.mnEms)+inp(px+'-mnemsexp','Expires',L.mnEmsExp,'date')+inp(px+'-nremt','NREMT #',L.nremt)+inp(px+'-nremtexp','Expires',L.nremtExp,'date')+
-        inp(px+'-aha','AHA instructor ID',L.aha)+inp(px+'-ahaexp','Expires',L.ahaExp,'date')+inp(px+'-other','Other licenses (number and expiration)',L.other,'text','full')+'</div></fieldset>';
-      h+='<fieldset><legend>Experience and availability</legend><div class="form-grid">'+inp(px+'-agency','Current agency',a.agency)+inp(px+'-years','Years in EMS',a.years,'number',''," min=\"0\"")+
-        '<div class="full"><label for="'+px+'-teach">Teaching experience</label><textarea id="'+px+'-teach" placeholder="Courses you\'ve taught, instructor certifications, precepting">'+esc(a.teaching||'')+'</textarea></div>'+
-        '<div class="full"><label>Roles you want</label><div class="checks">'+(c.roles||[]).filter(function(r){return r.name!=='Patient';}).map(function(r){ return '<label><input type="checkbox" class="'+px+'-role" value="'+esc(r.name)+'"'+((a.rolesWanted||[]).indexOf(r.name)>=0?' checked':'')+'> '+esc(r.name)+'</label>'; }).join('')+'</div></div>'+
+        inp(px+'-aha','AHA instructor ID',L.aha)+inp(px+'-ahaexp','Expires',L.ahaExp,'date')+
+        inp(px+'-othertype','Other license type (e.g. MN RN)',L.otherType)+inp(px+'-othernum','Other license #',L.otherNum)+inp(px+'-otherexp','Expires',L.otherExp,'date')+
+        inp(px+'-other','Notes about other certifications (optional)',L.other,'text','full')+'</div></fieldset>';
+      h+='<fieldset><legend>Experience and availability</legend><div class="form-grid">'+inp(px+'-agency','Current agency',a.agency)+inp(px+'-years','Years in EMS '+REQ,a.years,'number',''," min=\"0\"")+
+        '<div class="full"><label for="'+px+'-teach">Teaching experience '+REQ+'</label><textarea id="'+px+'-teach" placeholder="Courses you\'ve taught, instructor certifications, precepting">'+esc(a.teaching||'')+'</textarea></div>'+
+        '<div class="full"><label>Roles you want '+REQ+'</label><div class="checks" id="'+px+'-roles">'+(c.roles||[]).filter(function(r){return r.name!=='Patient';}).map(function(r){ return '<label><input type="checkbox" class="'+px+'-role" value="'+esc(r.name)+'"'+((a.rolesWanted||[]).indexOf(r.name)>=0?' checked':'')+'> '+esc(r.name)+'</label>'; }).join('')+'</div></div>'+
         '<div class="full"><label>Days you can usually work</label><div class="checks">'+(c.days||[]).map(function(d){ return '<label><input type="checkbox" class="'+px+'-day" value="'+d+'"'+(days.indexOf(d)>=0?' checked':'')+'> '+d+'</label>'; }).join('')+'</div></div>'+
         inp(px+'-avnotes','Availability notes (shift pattern, blackout dates)',avNotes,'text','full')+'</div></fieldset>';
       h+='<fieldset><legend>Two professional references</legend><div class="form-grid">'+[0,1].map(function(i){ var r=refs[i]||{};
-        return inp(px+'-r'+i+'n','Reference '+(i+1)+' name',r.name)+inp(px+'-r'+i+'r','Relationship (supervisor, coworker…)',r.relationship)+inp(px+'-r'+i+'p','Phone',r.phone,'tel')+inp(px+'-r'+i+'e','Email',r.email,'email'); }).join('')+'</div></fieldset>';
-      if(withFiles) h+='<fieldset><legend>Documents (PDF or photo, under 4 MB each)</legend><div class="form-grid">'+
-        '<div class="full"><label for="su-f-cert">Copies of your license and certification cards (pick several if needed)</label><input id="su-f-cert" type="file" multiple accept="application/pdf,image/*"></div>'+
-        inp('su-certname','Which cards are these?','','text','full',' placeholder="e.g. MN EMT license, NREMT, BLS Instructor"')+
-        '<div class="full"><label for="su-f-resume">Resume (PDF or Word)</label><input id="su-f-resume" type="file" accept="application/pdf,.doc,.docx"></div></div></fieldset>'+
-        '<fieldset><legend>Payroll forms (optional now)</legend><p class="small muted" style="margin:0 0 10px">You don\'t need these to apply, only before your first payment. Add them now or later on the Application tab.</p><div class="form-grid">'+
-        '<div><label for="su-f-w9">W-9 <span class="small" style="font-weight:500">('+formLink('W-9').replace('Blank W-9 (IRS, fillable PDF)','get the blank form')+')</span></label><input id="su-f-w9" type="file" accept="application/pdf,image/*"></div>'+
-        '<div class="full"><label for="su-f-dd">Direct deposit form, plus a voided check if you have one <span class="small" style="font-weight:500">('+formLink('Direct deposit').replace('ResQ direct deposit form (fillable PDF)','get the blank form')+')</span></label><input id="su-f-dd" type="file" multiple accept="application/pdf,image/*"></div></div>'+
-        '<p class="note">These go to a locked folder only ResQ\'s payroll contact can open, and they\'re never shown in the portal. We\'ll email you to confirm each upload.</p></fieldset>';
+        return inp(px+'-r'+i+'n','Reference '+(i+1)+' name '+REQ,r.name)+inp(px+'-r'+i+'r','Relationship (supervisor, coworker…) '+REQ,r.relationship)+inp(px+'-r'+i+'p','Phone '+REQ,r.phone,'tel')+inp(px+'-r'+i+'e','Email '+REQ,r.email,'email'); }).join('')+'</div></fieldset>';
+      if(mode==='signup'||mode==='upgrade') h+='<fieldset><legend>Documents (PDF or photo, under 4 MB each)</legend><div class="form-grid">'+
+        '<div class="full"><label for="'+px+'-f-cert">Copies of your license and certification cards '+REQ+' <span class="small muted" style="font-weight:500">(pick several if needed)</span></label><input id="'+px+'-f-cert" type="file" multiple accept="application/pdf,image/*"></div>'+
+        inp(px+'-certname','Which cards are these?','','text','full',' placeholder="e.g. MN EMT license, NREMT, BLS Instructor"')+
+        '<div class="full"><label for="'+px+'-f-resume">Resume '+REQ+' <span class="small muted" style="font-weight:500">(PDF or Word)</span></label><input id="'+px+'-f-resume" type="file" accept="application/pdf,.doc,.docx"></div></div></fieldset>';
     }
+    if(mode==='signup') h+='<fieldset><legend>Payroll forms (optional now)</legend><p class="small muted" style="margin:0 0 10px">You don\'t need these to apply, only before your first payment. Add them now or later on the Application tab.</p><div class="form-grid">'+
+        '<div><label for="'+px+'-f-w9">W-9 <span class="small" style="font-weight:500">('+formLink('W-9').replace('Blank W-9 (IRS, fillable PDF)','get the blank form')+')</span></label><input id="'+px+'-f-w9" type="file" accept="application/pdf,image/*"></div>'+
+        '<div class="full"><label for="'+px+'-f-dd">Direct deposit form, plus a voided check if you have one <span class="small" style="font-weight:500">('+formLink('Direct deposit').replace('ResQ direct deposit form (fillable PDF)','get the blank form')+')</span></label><input id="'+px+'-f-dd" type="file" multiple accept="application/pdf,image/*"></div></div>'+
+        '<p class="note">These go to a locked folder only ResQ\'s payroll contact can open, and they\'re never shown in the portal. We\'ll email you to confirm each upload.</p></fieldset>';
     var ag=(c.agreements||[]).filter(function(x){ return x.appliesTo==='Both'||x.appliesTo===track; });
-    h+='<fieldset><legend>Agreements</legend>'+ag.map(function(x,i){ return '<details class="agr"><summary>'+esc(x.name)+'</summary><p>'+esc(x.text)+'</p></details>'+
+    h+='<fieldset id="'+px+'-agrs"><legend>Agreements '+REQ+'</legend>'+ag.map(function(x,i){ return '<details class="agr"><summary>'+esc(x.name)+'</summary><p>'+esc(x.text)+'</p></details>'+
       '<label class="small" style="display:flex;gap:8px;margin:0 0 10px;font-weight:600"><input type="checkbox" class="'+px+'-agr" value="'+esc(x.name)+'"'+(agreed.indexOf(x.name)>=0?' checked':'')+'> I have read and agree to the '+esc(x.name.toLowerCase())+'</label>'; }).join('')+'</fieldset>';
+    h+='<div id="'+px+'-errs"></div>';
     return h;
   }
   function readAppForm(px, track){
     var refs=[0,1].map(function(i){ return {name:val(px+'-r'+i+'n'),relationship:val(px+'-r'+i+'r'),phone:val(px+'-r'+i+'p'),email:val(px+'-r'+i+'e')}; });
-    return { track:track, name:val(px+'-name'), email:val(px+'-email'), phone:val(px+'-phone'), address:val(px+'-address'), emergencyName:val(px+'-emname'), emergencyPhone:val(px+'-emphone'),
-      credentials:checked(px+'-cred'), licenses:{mnEms:val(px+'-mnems'),mnEmsExp:val(px+'-mnemsexp'),nremt:val(px+'-nremt'),nremtExp:val(px+'-nremtexp'),aha:val(px+'-aha'),ahaExp:val(px+'-ahaexp'),other:val(px+'-other')},
+    return { track:track, name:val(px+'-name'), email:val(px+'-email'), phone:val(px+'-phone'), address:val(px+'-address'), dob:val(px+'-dob'), emergencyName:val(px+'-emname'), emergencyPhone:val(px+'-emphone'),
+      credentials:checked(px+'-cred'), licenses:{mnEms:val(px+'-mnems'),mnEmsExp:val(px+'-mnemsexp'),nremt:val(px+'-nremt'),nremtExp:val(px+'-nremtexp'),aha:val(px+'-aha'),ahaExp:val(px+'-ahaexp'),
+        otherType:val(px+'-othertype'),otherNum:val(px+'-othernum'),otherExp:val(px+'-otherexp'),other:val(px+'-other')},
       agency:val(px+'-agency'), years:val(px+'-years'), teaching:val(px+'-teach'), rolesWanted:checked(px+'-role'), days:checked(px+'-day'), availabilityNotes:val(px+'-avnotes'),
       refs:refs, agreed:checked(px+'-agr') };
+  }
+  // Mirrors the server's rules; marks every missing field and returns false if anything is missing.
+  function checkAppForm(px, track, needFiles){
+    var p=readAppForm(px, track), miss=[], c=cfgPub();
+    Array.prototype.forEach.call(document.querySelectorAll('.bad'),function(e){ e.classList.remove('bad'); });
+    var need=function(id, ok, label){ if(!ok){ miss.push({id:id,label:label}); } };
+    var trim=function(v){ return String(v||'').trim(); }, email=function(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trim(v)); };
+    need(px+'-name', trim(p.name).split(/\s+/).length>=2, 'Full name (first and last)');
+    if(!$(px+'-email').disabled) need(px+'-email', email(p.email), 'Email');
+    need(px+'-phone', trim(p.phone), 'Mobile phone');
+    need(px+'-address', trim(p.address), 'Mailing address');
+    if(track==='Patient'){
+      need(px+'-dob', /^\d{4}-\d{2}-\d{2}$/.test(p.dob), 'Date of birth');
+      if(/^\d{4}-\d{2}-\d{2}$/.test(p.dob)){ var b=new Date(p.dob+'T00:00:00'), n=new Date(), age=n.getFullYear()-b.getFullYear()-((n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate()))?1:0); need(px+'-dob', age>=18, 'Patients must be 18 or older'); }
+    }
+    need(px+'-emname', trim(p.emergencyName), 'Emergency contact name');
+    need(px+'-emphone', trim(p.emergencyPhone), 'Emergency contact phone');
+    if(track==='Instructor'){
+      var has=function(list){ return p.credentials.some(function(x){ return list.indexOf(x)>=0; }); }, L=p.licenses;
+      need(px+'-creds', p.credentials.length, 'At least one certification');
+      var pair=function(numId, expId, num, exp, label, needed){ if(needed) need(numId, trim(num), label+' number'); if(needed||trim(num)) need(expId, /^\d{4}-\d{2}-\d{2}$/.test(exp), label+' expiration'); };
+      pair(px+'-mnems', px+'-mnemsexp', L.mnEms, L.mnEmsExp, 'MN EMS license', has(EMS_CREDS));
+      pair(px+'-nremt', px+'-nremtexp', L.nremt, L.nremtExp, 'NREMT', has(EMS_CREDS));
+      pair(px+'-aha', px+'-ahaexp', L.aha, L.ahaExp, 'AHA instructor ID', has(AHA_CREDS));
+      if(has(OTHER_LIC_CREDS)) need(px+'-othertype', trim(L.otherType), 'Other license type');
+      pair(px+'-othernum', px+'-otherexp', L.otherNum, L.otherExp, 'Other license', has(OTHER_LIC_CREDS));
+      need(px+'-years', trim(p.years)!=='' && Number(p.years)>=0, 'Years in EMS');
+      need(px+'-teach', trim(p.teaching).length>=10, 'Teaching experience (a sentence or two)');
+      need(px+'-roles', p.rolesWanted.length, 'At least one role you want');
+      [0,1].forEach(function(i){ var r=p.refs[i];
+        need(px+'-r'+i+'n', trim(r.name), 'Reference '+(i+1)+' name'); need(px+'-r'+i+'r', trim(r.relationship), 'Reference '+(i+1)+' relationship');
+        need(px+'-r'+i+'p', trim(r.phone), 'Reference '+(i+1)+' phone'); need(px+'-r'+i+'e', email(r.email), 'Reference '+(i+1)+' email'); });
+      if(needFiles){ need(px+'-f-cert', $(px+'-f-cert').files.length, 'Copy of a license or cert card'); need(px+'-f-resume', $(px+'-f-resume').files.length, 'Resume'); }
+    }
+    var ag=(c.agreements||[]).filter(function(x){ return x.appliesTo==='Both'||x.appliesTo===track; });
+    need(px+'-agrs', ag.every(function(x){ return p.agreed.indexOf(x.name)>=0; }), 'Check every agreement');
+    var box=$(px+'-errs');
+    if(!miss.length){ if(box) box.innerHTML=''; return p; }
+    miss.forEach(function(m){ var e=$(m.id); if(e) e.classList.add('bad'); });
+    if(box) box.innerHTML='<div class="msg err" style="display:block;margin:6px 0 12px"><b>Please finish these before submitting:</b><ul style="margin:6px 0 0;padding-left:18px">'+
+      miss.map(function(m){ return '<li>'+esc(m.label)+'</li>'; }).filter(function(v,i,arr){ return arr.indexOf(v)===i; }).join('')+'</ul></div>';
+    var first=$(miss[0].id); if(first){ first.scrollIntoView({block:'center'}); if(first.focus) first.focus(); }
+    return null;
+  }
+  function filesFrom(px){
+    var out=[], cred=val(px+'-certname')||'Certification card', big=null;
+    [[px+'-f-cert','Cert card'],[px+'-f-resume','Resume'],[px+'-f-w9','W-9'],[px+'-f-dd','Direct deposit']].forEach(function(x){
+      var el=$(x[0]); if(!el) return;
+      Array.prototype.forEach.call(el.files,function(f){ if(f.size>4*1024*1024) big=f.name; out.push({kind:x[1],file:f,credential:cred}); });
+    });
+    return {files:out, tooBig:big};
   }
   function payChips(cl, label){ var p=cl.payroll; return '<div class="cl" style="align-items:center"><span style="background:none;padding:0;font-weight:600;color:var(--slate)">'+(label||'Before first payment:')+'</span>'+p.items.map(function(i){ return '<span class="'+(i.done?'y':'n')+'" style="'+(i.done?'':'background:#F4F6F8;color:var(--slate)')+'">'+(i.done?'✓ ':'○ ')+esc(i.label)+'</span>'; }).join('')+'</div>'; }
   function checkChips(cl){ return '<div class="cl">'+cl.items.map(function(i){ return '<span class="'+(i.done?'y':'n')+'">'+(i.done?'✓ ':'✗ ')+esc(i.label)+'</span>'; }).join('')+'</div>'; }
@@ -499,8 +559,8 @@
     if(a && a.track==='Patient'){
       if(S.upgrading){
         var preU=Object.assign({}, a, {name:me.name, email:me.email, phone:me.phone, credentials:me.credentials, agreements:''});
-        out+='<div class="card"><h3>Apply to be an instructor</h3><p class="small muted">You keep your patient access while ResQ reviews this. Add your cert cards and resume in Documents after you send it.</p>'+
-          appForm('up', preU, 'Instructor', false)+'<div class="row-tools"><button class="btn" data-act="applyInstructor">Send instructor application</button><button class="btn ghost" data-act="upgradeClose">Cancel</button></div></div>';
+        out+='<div class="card"><h3>Apply to be an instructor</h3><p class="small muted">You keep your patient access while ResQ reviews this.</p>'+
+          appForm('up', preU, 'Instructor', 'upgrade')+'<div class="row-tools"><button class="btn" data-act="applyInstructor">Send instructor application</button><button class="btn ghost" data-act="upgradeClose">Cancel</button></div></div>';
       } else out+='<div class="card row-tools" style="justify-content:space-between"><div><b>Want to teach too?</b><div class="small muted">Apply to be an instructor, assistant or evaluator. You keep your patient access while ResQ reviews it.</div></div><button class="btn" data-act="upgradeOpen">Apply to be an instructor</button></div>';
     }
     out+='<div class="grid g2"><div class="card"><h3>Documents</h3>'+formsBox();
@@ -589,11 +649,12 @@
   }
   function appSummary(i){
     var a=i.application; if(!a) return '<p class="small" style="color:var(--ember);margin:4px 0">No application submitted yet.</p>';
-    var L=a.licenses, lic=[['MN EMS',L.mnEms,L.mnEmsExp],['NREMT',L.nremt,L.nremtExp],['AHA instructor',L.aha,L.ahaExp]].filter(function(x){return x[1];})
+    var L=a.licenses, lic=[['MN EMS',L.mnEms,L.mnEmsExp],['NREMT',L.nremt,L.nremtExp],['AHA instructor',L.aha,L.ahaExp],[L.otherType||'Other license',L.otherNum,L.otherExp]].filter(function(x){return x[1];})
       .map(function(x){ return esc(x[0])+' '+esc(x[1])+(x[2]?' (exp '+esc(x[2])+')':''); }).join(' · ');
     var refs=a.refs.filter(function(r){return r.name;}).map(function(r){ return esc(r.name)+(r.relationship?', '+esc(r.relationship):'')+' · '+esc([r.phone,r.email].filter(Boolean).join(' · ')); }).join('<br>');
     var rows=[['Track',a.track],['Submitted',a.submitted]];
     if(a.track==='Instructor') rows.push(['Licenses',lic||'-',1],['Other',L.other],['Agency',a.agency+(a.years?' · '+a.years+' yrs EMS':'')],['Teaching',a.teaching],['Wants',a.rolesWanted.join(', ')],['Availability',a.availability],['References',refs||'-',1],['Address',a.address]);
+    if(a.track==='Patient') rows.push(['Address',a.address],['Date of birth',a.dob]);
     rows.push(['Emergency',a.emergencyName+' · '+a.emergencyPhone],['Agreed',a.agreements]);
     return '<details style="margin-top:6px"><summary class="small" style="cursor:pointer;font-weight:700;color:var(--ember)">View application</summary><dl class="appsum">'+
       rows.filter(function(r){return r[1];}).map(function(r){ return '<dt>'+esc(r[0])+'</dt><dd>'+(r[2]?r[1]:esc(r[1]))+'</dd>'; }).join('')+'</dl></details>';
@@ -791,11 +852,15 @@
     if(act==='ics'){ var r=S.data.requests.filter(function(x){return x.id===id;})[0]; if(r) ics(r); return; }
     if(act==='upgradeOpen'){ S.upgrading=true; render(); var f=document.getElementById('up-address'); if(f) f.scrollIntoView({block:'center'}); return; }
     if(act==='upgradeClose'){ S.upgrading=false; render(); return; }
-    if(act==='applyInstructor') return run(b, authed('apiApplyInstructor', readAppForm('up','Instructor')),'Instructor application sent', function(){ S.upgrading=false; S.upKind='Cert card'; });
+    if(act==='applyInstructor'){
+      var pu=checkAppForm('up','Instructor',true); if(!pu) return;
+      var fu=filesFrom('up'); if(fu.tooBig){ toast(fu.tooBig+' is over 4 MB.'); return; }
+      return run(b, authed('apiApplyInstructor', pu).then(function(){ S.queued=fu.files; return uploadQueued(); }),'Instructor application sent', function(){ S.upgrading=false; S.upKind='Cert card'; });
+    }
     if(act==='savePrefs') return run(b, authed('apiSaveMyPrefs', readPrefs('pf')),'Email settings saved');
-    if(act==='saveApp') return run(b, authed('apiSaveApplication', readAppForm('ap', b.dataset.track)),'Application saved');
+    if(act==='saveApp'){ var pa=checkAppForm('ap', b.dataset.track, false); if(!pa) return; return run(b, authed('apiSaveApplication', pa),'Application saved'); }
     if(act==='appTrack'){ S.appTrack=b.dataset.v; render(); return; }
-    if(act==='track'){ S.track=b.dataset.v; $('su-form').innerHTML=appForm('su',{name:val('su-name'),email:val('su-email'),phone:val('su-phone'),emergencyName:val('su-emname'),emergencyPhone:val('su-emphone')},S.track,true); return; }
+    if(act==='track'){ S.track=b.dataset.v; $('su-form').innerHTML=appForm('su',{name:val('su-name'),email:val('su-email'),phone:val('su-phone'),address:val('su-address'),emergencyName:val('su-emname'),emergencyPhone:val('su-emphone')},S.track,'signup'); return; }
     if(act==='staffPreview'||act==='staffApply') return run(b, authed('apiAdminStaffing',S.bCourse,val('st-n'),act==='staffApply'), function(r){ return r.applied?'Staffing updated on '+r.changes.length+' slots':(r.changes.length?r.changes.length+' slots would change':'No changes needed'); }, function(r){ S.staff=Object.assign({courseId:S.bCourse},r); });
     if(act==='staffClear'){ S.staff=null; render(); return; }
     if(act==='upload'){
