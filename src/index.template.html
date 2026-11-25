@@ -340,7 +340,7 @@
     var cr=checked(px+'-cred'), has=function(list){ return cr.some(function(x){ return list.indexOf(x)>=0; }); };
     var show=function(f,on){ var e=$(px+'-'+f+'-req'); if(e) e.hidden=!on; };
     [['mnems',EMS_CREDS],['nremt',EMS_CREDS],['aha',AHA_CREDS],['othernum',OTHER_LIC_CREDS]].forEach(function(x){
-      var need=has(x[1]); show(x[0],need); show(x[0].replace('num','')+'exp', need || !!val(px+'-'+x[0]).trim());
+      var need=has(x[1]); show(x[0],need); show(x[0].replace('num','')+'exp', need);
     });
     show('othertype', has(OTHER_LIC_CREDS));
   }
@@ -360,7 +360,7 @@
       inp(px+'-emname','Emergency contact name '+REQ,a.emergencyName)+inp(px+'-emphone','Emergency contact phone '+REQ,a.emergencyPhone,'tel')+'</div></fieldset>';
     if(track==='Instructor'){
       h+='<fieldset><legend>Certifications</legend><label>Certifications you hold '+REQ+'</label><div class="checks" id="'+px+'-creds">'+credChecks(px+'-cred',a.credentials||[])+'</div>'+
-        '<p class="small muted" style="margin:10px 0 0">Required with an expiration date: MN EMS and NREMT numbers if you hold EMR, EMT, AEMT or Paramedic; your AHA instructor ID if you\'re an AHA instructor; and your license if you\'re an RN, physician, PA or NP. Any number you enter needs its expiration date.</p>'+
+        '<p class="small muted" style="margin:10px 0 0">Required with an expiration date: MN EMS and NREMT numbers if you hold EMR, EMT, AEMT or Paramedic; your AHA instructor ID if you\'re an AHA instructor; and your license if you\'re an RN, physician, PA or NP.</p>'+
         '<div class="form-grid" style="margin-top:10px">'+
         inp(px+'-mnems','MN EMS license #'+dyn(px,'mnems'),L.mnEms)+inp(px+'-mnemsexp','Expires'+dyn(px,'mnemsexp'),L.mnEmsExp,'date')+inp(px+'-nremt','NREMT #'+dyn(px,'nremt'),L.nremt)+inp(px+'-nremtexp','Expires'+dyn(px,'nremtexp'),L.nremtExp,'date')+
         inp(px+'-aha','AHA instructor ID'+dyn(px,'aha'),L.aha)+inp(px+'-ahaexp','Expires'+dyn(px,'ahaexp'),L.ahaExp,'date')+
@@ -415,7 +415,7 @@
     if(track==='Instructor'){
       var has=function(list){ return p.credentials.some(function(x){ return list.indexOf(x)>=0; }); }, L=p.licenses;
       need(px+'-creds', p.credentials.length, 'At least one certification');
-      var pair=function(numId, expId, num, exp, label, needed){ if(needed) need(numId, trim(num), label+' number'); if(needed||trim(num)) need(expId, /^\d{4}-\d{2}-\d{2}$/.test(exp), label+' expiration'); };
+      var pair=function(numId, expId, num, exp, label, needed){ if(needed) need(numId, trim(num), label+' number'); if(needed) need(expId, /^\d{4}-\d{2}-\d{2}$/.test(exp), label+' expiration'); };
       pair(px+'-mnems', px+'-mnemsexp', L.mnEms, L.mnEmsExp, 'MN EMS license', has(EMS_CREDS));
       pair(px+'-nremt', px+'-nremtexp', L.nremt, L.nremtExp, 'NREMT', has(EMS_CREDS));
       pair(px+'-aha', px+'-ahaexp', L.aha, L.ahaExp, 'AHA instructor ID', has(AHA_CREDS));

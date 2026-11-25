@@ -57,7 +57,8 @@ test('signup, login and pending accounts', async () => {
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { licenses: {} })), /MN EMS license number; your MN EMS license expiration date; your NREMT number/);
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT', 'AHA BLS Instructor'])), /AHA instructor ID number/);
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['RN'], { licenses: {} })), /type of your other license \(e.g. MN RN\); your other license number/);
-  await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['Firefighter'], { licenses: { aha: '12345' } })), /AHA instructor ID expiration date/);
+  // A number without its cert checked no longer forces an expiration date
+  await ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['Firefighter'], { licenses: { aha: '12345' } }));
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { years: '', teaching: 'hi' })), /years in EMS; and your teaching experience/);
   await rejects(ctx.portal.apiSignup(patientApp('Kid Patient', 'kid@x.com', { dob: '2012-01-01' })), /18 or older/);
   await rejects(ctx.portal.apiSignup(patientApp('No Dob', 'nd@x.com', { dob: '', address: '' })), /your mailing address; .*and your date of birth/);
