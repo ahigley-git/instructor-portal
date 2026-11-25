@@ -322,6 +322,12 @@
     window.scrollTo(0,y);
   }
 
+  // ---------- blank forms ----------
+  var FORMS={'W-9':{url:'https://www.irs.gov/pub/irs-pdf/fw9.pdf',label:'Blank W-9 (IRS, fillable PDF)'},'Direct deposit':{url:'/forms/resq-direct-deposit-authorization.pdf',label:'ResQ direct deposit form (fillable PDF)'}};
+  function formLink(k){ var f=FORMS[k]; return '<a href="'+f.url+'" target="_blank" rel="noopener" download>'+esc(f.label)+'</a>'; }
+  function formsBox(){ return '<div class="okbox" style="background:#F4F6F8;color:var(--ink)"><b>Forms to fill out:</b> '+formLink('W-9')+' · '+formLink('Direct deposit')+
+    '<div class="small muted" style="margin-top:4px">Download, fill in and sign, save, then upload below. Upload a voided check (or a bank letter) with the direct deposit form as a second upload.</div></div>'; }
+
   // ---------- application form ----------
   function cfgPub(){ return S.pub || (S.data && S.data.config) || {roles:[],agreements:[],days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']}; }
   function inp(id,label,v,type,cls,extra){ return '<div class="'+(cls||'')+'"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(v||'')+'"'+(extra||'')+'></div>'; }
@@ -350,8 +356,8 @@
         '<div class="full"><label for="su-f-cert">Copies of your license and certification cards (pick several if needed)</label><input id="su-f-cert" type="file" multiple accept="application/pdf,image/*"></div>'+
         inp('su-certname','Which cards are these?','','text','full',' placeholder="e.g. MN EMT license, NREMT, BLS Instructor"')+
         '<div><label for="su-f-resume">Resume (PDF or Word)</label><input id="su-f-resume" type="file" accept="application/pdf,.doc,.docx"></div>'+
-        '<div><label for="su-f-w9">W-9</label><input id="su-f-w9" type="file" accept="application/pdf,image/*"></div>'+
-        '<div class="full"><label for="su-f-dd">Direct deposit form</label><input id="su-f-dd" type="file" accept="application/pdf,image/*"></div></div>'+
+        '<div><label for="su-f-w9">W-9 <span class="small" style="font-weight:500">('+formLink('W-9').replace('Blank W-9 (IRS, fillable PDF)','get the blank form')+')</span></label><input id="su-f-w9" type="file" accept="application/pdf,image/*"></div>'+
+        '<div class="full"><label for="su-f-dd">Direct deposit form and voided check <span class="small" style="font-weight:500">('+formLink('Direct deposit').replace('ResQ direct deposit form (fillable PDF)','get the blank form')+')</span></label><input id="su-f-dd" type="file" multiple accept="application/pdf,image/*"></div></div>'+
         '<p class="note">The W-9 and direct deposit form go to a locked folder that only ResQ\'s payroll contact can open. They\'re never shown in the portal. You can also add any of these later.</p></fieldset>';
     }
     var ag=(c.agreements||[]).filter(function(x){ return x.appliesTo==='Both'||x.appliesTo===track; });
@@ -480,7 +486,7 @@
     var out='<h2>My application</h2><p class="sub">Keep your application and documents current. ResQ uses them to approve your account and clear you for roles.</p>';
     out+='<div class="card"><div><b>Status:</b> '+pill(me.status)+' <span class="small muted">Cleared for: '+(me.roles.length?esc(me.roles.join(', ')):'none yet')+'</span></div>'+
       checkChips(cl)+(cl.complete?'<p class="small" style="color:var(--ok);margin:4px 0 0">Everything ResQ needs is in.</p>':'<p class="small muted" style="margin:4px 0 0">Still needed: '+esc(cl.missing.join(', '))+'</p>')+'</div>';
-    out+='<div class="grid g2"><div class="card"><h3>Documents</h3>';
+    out+='<div class="grid g2"><div class="card"><h3>Documents</h3>'+(track==='Instructor'?formsBox():'');
     out+= d.certs.length ? '<div class="list">'+d.certs.map(function(c){ var priv=c.kind==='W-9'||c.kind==='Direct deposit';
       return '<div class="row"><div><div class="t">'+esc(c.kind==='Cert card'?c.credential:c.kind)+'</div><div class="s">'+(priv?'On file (private)':esc(c.fileName))+'</div></div><div class="s">'+(c.expires?'Expires '+esc(c.expires)+'<br>':'')+'Uploaded '+esc(c.uploaded)+'</div></div>'; }).join('')+'</div>' : '<p class="empty">No documents uploaded yet.</p>';
     if(d.config.uploads){
@@ -489,7 +495,7 @@
       out+='<div style="margin-top:12px"><label>Upload a document</label>'+chips('upKind',kinds.map(function(k){return [k,k==='Cert card'?'Cert or license card':k];}),S.upKind)+'</div><div class="form-grid" style="margin-top:10px">';
       if(S.upKind==='Cert card') out+='<div><label>Which card</label><select id="up-cred"><option value="">Pick one…</option>'+['MN EMS license','NREMT card'].concat(CREDS).concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div><label>Expires</label><input id="up-exp" type="date"></div>';
       out+='<div class="full"><label>File ('+(S.upKind==='Resume'?'PDF or Word':'PDF or photo')+', under 4 MB)</label><input id="up-file" type="file" accept="'+(S.upKind==='Resume'?'application/pdf,.doc,.docx':'application/pdf,image/*')+'"></div></div>'+
-        ((S.upKind==='W-9'||S.upKind==='Direct deposit')?'<p class="note">This goes to a locked folder only ResQ\'s payroll contact can open. It won\'t be shown in the portal after upload.</p>':'')+
+        ((S.upKind==='W-9'||S.upKind==='Direct deposit')?'<p class="note">Need the blank form? '+formLink(S.upKind)+'. This goes to a locked folder only ResQ\'s payroll contact can open. It won\'t be shown in the portal after upload.</p>':'')+
         '<div style="margin-top:12px"><button class="btn" data-act="upload">Upload</button></div>';
     } else out+='<p class="note">Uploads aren\'t switched on yet. Email your documents to '+esc(d.config.contact)+'.</p>';
     out+='</div><div class="card"><h3>Application</h3>'+(a?'<p class="small muted">Submitted '+esc(a.submitted)+(a.updated&&a.updated!==a.submitted?', updated '+esc(a.updated):'')+'</p>':'<div class="warnbox">You haven\'t submitted an application yet. Fill this out so ResQ can approve you.</div>');

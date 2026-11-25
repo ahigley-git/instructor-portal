@@ -22,6 +22,7 @@ Instructor sign-up portal for ResQ Education, served at **instructors.resqedu.co
 | `lib/google.mjs` | Google Sheets (data) and Google Drive (cert uploads) through a service account |
 | `lib/brevo.mjs` | Email through Brevo |
 | `lib/seed.mjs` | Sheet layout and the January/June 2027 Accelerated EMT schedule |
+| `public/forms/` | Blank fillable ResQ direct deposit form offered on the Application tab (rebuild with `python3 scripts/make-dd-form.py`). The W-9 links to the IRS's current blank form. |
 | `demo/index.html` | Self-contained clickable demo with sample data (not used by the live site) |
 
 ## Data

@@ -11,7 +11,7 @@ const origSend = ctx.mailer.send;
 ctx.mailer.send = async (m) => { console.log('EMAIL to', m.to, '|', m.subject); return origSend(m); };
 const root = path.resolve('public');
 const port = Number(process.env.PORT || 8888);
-const types = { '.html': 'text/html', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
+const types = { '.pdf': 'application/pdf', '.html': 'text/html', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 
 http.createServer(async (req, res) => {
   const m = req.url.match(/^\/api\/([A-Za-z]+)$/);
