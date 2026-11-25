@@ -18,7 +18,7 @@ export const fullApp = (name, email, creds = ['EMT'], extra = {}) => ({ track: '
 async function signup(ctx, name, email, creds = ['EMT'], opt = {}) {
   clearRl(ctx);
   const patient = creds.includes('Student / pre-health (patient role)');
-  await ctx.portal.apiSignup(patient ? { track: 'Patient', name, email, phone: '651-555-0100', emergencyName: 'Mom', emergencyPhone: '651-555-0102', agreed: ['Patient volunteer code of conduct and waiver'] } : fullApp(name, email, creds));
+  await ctx.portal.apiSignup(patient ? { track: 'Patient', name, email, phone: '651-555-0100', emergencyName: 'Mom', emergencyPhone: '651-555-0102', agreed: ['Patient code of conduct and waiver', 'Independent contractor and pay terms'] } : fullApp(name, email, creds));
   const token = (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
   if (!patient && !opt.pending) {
     ctx._adm = ctx._adm || await login(ctx, 'admin@resqedu.com');
@@ -267,7 +267,7 @@ test('application checklist, private pay forms, patient track', async () => {
   d = await ctx.portal.apiGetData(p);
   assert.equal(d.me.checklist.track, 'Patient');
   assert.equal(d.me.checklist.complete, true);
-  await rejects(ctx.portal.apiSignup({ track: 'Patient', name: 'No Waiver', email: 'nw@x.com', phone: '1', emergencyName: 'A', emergencyPhone: '2', agreed: [] }), /waiver/);
+  await rejects(ctx.portal.apiSignup({ track: 'Patient', name: 'No Waiver', email: 'nw@x.com', phone: '1', emergencyName: 'A', emergencyPhone: '2', agreed: [] }), /Read and check/);
 });
 
 test('staffing follows enrollment: preview, apply, overstaffing kept', async () => {
@@ -357,4 +357,36 @@ test('opening alerts, digests and the manage-settings link', async () => {
   // logged-in save + personal reminder opt-out respected
   await ctx.portal.apiSaveMyPrefs(a, { alerts: ['New course'], digest: 'Monthly', reminders: true });
   assert.deepEqual((await ctx.portal.apiGetData(a)).me.prefs, { alerts: ['New course'], digest: 'Monthly', reminders: true });
+});
+
+test('a patient can apply to instruct, keeps patient access, and gets approved or declined', async () => {
+  const ctx = makePortal();
+  const admin = await login(ctx, 'admin@resqedu.com');
+  const p = await signup(ctx, 'Pat Patient', 'pat@x.com', ['Student / pre-health (patient role)']);
+  await ctx.portal.apiAdminInstructor(admin, 'pat@x.com', { status: 'Approved' });
+  await rejects(ctx.portal.apiSaveApplication(p, fullApp('Pat Patient', 'pat@x.com')), /Apply to be an instructor/);
+  await rejects(ctx.portal.apiApplyInstructor(p, fullApp('Pat Patient', 'pat@x.com', ['EMT'], { refs: [] })), /two professional references/);
+  await ctx.portal.apiApplyInstructor(p, fullApp('Pat Patient', 'pat@x.com', ['EMT']));
+  assert.ok(ctx.mailer.sent.some((m) => m.to === 'admin@resqedu.com' && /Instructor application from a patient/.test(m.subject)));
+  let d = await ctx.portal.apiGetData(p);
+  assert.equal(d.me.application.track, 'Instructor');
+  assert.equal(d.me.application.upgrade.status, 'Pending');
+  // still a patient meanwhile, not an instructor yet
+  assert.equal((await ctx.portal.apiRequestSlot(p, 'EMT-2027-01-D04-PM-PAT')).status, 'Pending');
+  await rejects(ctx.portal.apiRequestSlot(p, 'EMT-2027-01-D05-PM-AST'), /not cleared/);
+  await rejects(ctx.portal.apiAdminInstructor(admin, 'pat@x.com', { roles: [], upgrade: 'Approved' }), /Tick at least one instructor role/);
+  await ctx.portal.apiAdminInstructor(admin, 'pat@x.com', { roles: ['Assistant Instructor'], upgrade: 'Approved' });
+  assert.ok(ctx.mailer.sent.some((m) => m.to === 'pat@x.com' && /approved to teach/.test(m.subject) && /Assistant Instructor/.test(m.html)));
+  assert.equal((await ctx.portal.apiRequestSlot(p, 'EMT-2027-01-D05-PM-AST')).status, 'Pending');
+  d = await ctx.portal.apiGetData(admin);
+  assert.equal(d.admin.instructors.find((i) => i.email === 'pat@x.com').application.upgrade.status, 'Approved');
+  // a pending patient applicant who applies to instruct, then is declined, goes back to the patient track
+  const q = await signup(ctx, 'Quin Patient', 'quin@x.com', ['Student / pre-health (patient role)']);
+  await ctx.portal.apiApplyInstructor(q, fullApp('Quin Patient', 'quin@x.com', ['EMR']));
+  assert.equal((await ctx.portal.apiRequestSlot(q, 'EMT-2027-01-D06-PM-PAT')).status, 'Pending'); // pending, but kept patient access
+  await ctx.portal.apiAdminInstructor(admin, 'quin@x.com', { upgrade: 'Declined' });
+  d = await ctx.portal.apiGetData(q);
+  assert.equal(d.me.application.track, 'Patient');
+  assert.equal(d.me.application.upgrade.status, 'Declined');
+  assert.ok(ctx.mailer.sent.some((m) => m.to === 'quin@x.com' && /still on our patient list/.test(m.html)));
 });

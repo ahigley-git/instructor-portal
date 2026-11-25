@@ -2,7 +2,7 @@
 
 Instructor sign-up portal for ResQ Education, served at **instructors.resqedu.com** on Netlify. Built the same way as the ambassador portal.
 
-- People apply through the portal (instructor/evaluator or patient-volunteer application), log in with an emailed 6-digit code, upload documents, and request class slots.
+- People apply through the portal (instructor/evaluator or patient application; patients can later apply to become instructors), log in with an emailed 6-digit code, upload documents, and request class slots.
 - A request holds the slot right away as **Pending** (even before the account is approved). When a slot is full, later requests go on a **Waitlist** and move up on their own when a spot opens.
 - Pending and waitlisted requests can be released anytime. Dropping an **Approved** slot sends a drop request that an admin approves.
 - Each slot can follow enrollment (1 per 3 students, etc.). Admins change enrollment once and preview/apply the new openings for the whole course.

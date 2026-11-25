@@ -248,10 +248,10 @@
           <div style="height:14px"></div>
           <button class="btn block" id="btn-send" type="submit">Send my code</button>
         </form>
-        <div class="signup-link">New to teaching or volunteering with ResQ? <button class="linkbtn" id="btn-show-signup" type="button">Apply here</button></div>
+        <div class="signup-link">New to working with ResQ? <button class="linkbtn" id="btn-show-signup" type="button">Apply here</button></div>
       </div>
       <div id="step-signup" class="hidden">
-        <p>Apply to teach or volunteer with ResQ. Once ResQ reviews and approves your application, you can sign up for class slots. Patient volunteers can hold patient slots right away.</p>
+        <p>Apply to teach or work as a patient with ResQ. Once ResQ reviews and approves your application, you can sign up for class slots. Patient applicants can hold patient slots right away.</p>
         <form id="form-signup"><div id="su-form"><div class="loading"><div class="spinner"></div>Loading the application…</div></div>
           <div style="height:14px"></div>
           <button class="btn block" id="btn-signup" type="submit">Submit application and send my code</button>
@@ -431,7 +431,7 @@
   }
   function adminCounts(){
     var a=S.data.admin; if(!a) return {};
-    return { accounts:a.instructors.filter(function(i){return i.status==='Pending';}).length,
+    return { accounts:a.instructors.filter(function(i){return i.status==='Pending'||(i.application&&i.application.upgrade&&i.application.upgrade.status==='Pending');}).length,
       requests:a.requests.filter(function(r){return r.status==='Pending' && !r.past;}).length,
       drops:a.requests.filter(function(r){return r.status==='Drop requested';}).length,
       owed:a.requests.filter(function(r){return r.pay==='Owed';}).length };
@@ -462,7 +462,7 @@
     var av=a.availability||'', days=(c.days||[]).filter(function(d){ return av.indexOf(d)>=0; }), avNotes=av.replace(/^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(, )?)+(\.\s*)?/,'');
     var h='';
     if(withFiles) h+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="track" data-v="Instructor"><b>Instructor or evaluator</b><span>Teach, assist, run stations or evaluate</span></button>'+
-      '<button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="track" data-v="Patient"><b>Patient volunteer only</b><span>Play patients in scenarios and exams</span></button></div>';
+      '<button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="track" data-v="Patient"><b>Patient (role player) only</b><span>Paid to play patients in scenarios and exams</span></button></div>';
     h+='<fieldset><legend>Contact</legend><div class="form-grid">'+inp(px+'-name','Full name',a.name,'text','full',' autocomplete="name"')+
       (withFiles?inp(px+'-email','Email',a.email,'email','',' autocomplete="email"'):inp(px+'-email','Email (your login)',a.email,'email','',' disabled title="This is the email you log in with. Contact ResQ to change it."'))+inp(px+'-phone','Mobile phone',a.phone,'tel','',' autocomplete="tel"')+
       (track==='Instructor'?inp(px+'-address','Mailing address',a.address,'text','full',' autocomplete="street-address"'):'')+
@@ -619,7 +619,16 @@
     var out='<h2>My application</h2><p class="sub">Keep your application and documents current. ResQ uses them to approve your account and clear you for roles.</p>';
     out+='<div class="card"><div><b>Status:</b> '+pill(me.status)+' <span class="small muted">Cleared for: '+(me.roles.length?esc(me.roles.join(', ')):'none yet')+'</span></div>'+
       checkChips(cl)+(cl.complete?'<p class="small" style="color:var(--ok);margin:4px 0 0">Your application is complete.</p>':'<p class="small muted" style="margin:4px 0 0">Still needed to apply: '+esc(cl.missing.join(', '))+'</p>')+
-      payChips(cl,'Payroll forms (needed before your first payment, not to apply):')+'</div>';
+      payChips(cl,'Payroll forms (needed before your first payment, not to apply):')+
+      (a&&a.upgrade&&a.upgrade.status==='Pending'?'<div class="okbox" style="margin:10px 0 0">Your instructor application (sent '+esc(a.upgrade.requested)+') is under review. You can keep signing up for patient slots in the meantime.</div>':'')+
+      (a&&a.upgrade&&a.upgrade.status==='Declined'?'<p class="small muted" style="margin:8px 0 0">Your instructor application wasn\'t approved this time. You can apply again below.</p>':'')+'</div>';
+    if(a && a.track==='Patient'){
+      if(S.upgrading){
+        var preU=Object.assign({}, a, {name:me.name, email:me.email, phone:me.phone, credentials:me.credentials, agreements:''});
+        out+='<div class="card"><h3>Apply to be an instructor</h3><p class="small muted">You keep your patient access while ResQ reviews this. Add your cert cards and resume in Documents after you send it.</p>'+
+          appForm('up', preU, 'Instructor', false)+'<div class="row-tools"><button class="btn" data-act="applyInstructor">Send instructor application</button><button class="btn ghost" data-act="upgradeClose">Cancel</button></div></div>';
+      } else out+='<div class="card row-tools" style="justify-content:space-between"><div><b>Want to teach too?</b><div class="small muted">Apply to be an instructor, assistant or evaluator. You keep your patient access while ResQ reviews it.</div></div><button class="btn" data-act="upgradeOpen">Apply to be an instructor</button></div>';
+    }
     out+='<div class="grid g2"><div class="card"><h3>Documents</h3>'+formsBox();
     out+= d.certs.length ? '<div class="list">'+d.certs.map(function(c){ var priv=c.kind==='W-9'||c.kind==='Direct deposit';
       return '<div class="row"><div><div class="t">'+esc(c.kind==='Cert card'?c.credential:c.kind)+'</div><div class="s">'+(priv?'On file (private)':esc(c.fileName))+'</div></div><div class="s">'+(c.expires?'Expires '+esc(c.expires)+'<br>':'')+'Uploaded '+esc(c.uploaded)+'</div></div>'; }).join('')+'</div>' : '<p class="empty">No documents uploaded yet.</p>';
@@ -633,7 +642,7 @@
         '<div style="margin-top:12px"><button class="btn" data-act="upload">Upload</button></div>';
     } else out+='<p class="note">Uploads aren\'t switched on yet. Email your documents to '+esc(d.config.contact)+'.</p>';
     out+='</div><div class="card"><h3>Application</h3>'+(a?'<p class="small muted">Submitted '+esc(a.submitted)+(a.updated&&a.updated!==a.submitted?', updated '+esc(a.updated):'')+'</p>':'<div class="warnbox">You haven\'t submitted an application yet. Fill this out so ResQ can approve you.</div>');
-    if(!a) out+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="appTrack" data-v="Instructor"><b>Instructor or evaluator</b></button><button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="appTrack" data-v="Patient"><b>Patient volunteer only</b></button></div>';
+    if(!a) out+='<div class="track"><button type="button" class="'+(track==='Instructor'?'on':'')+'" data-act="appTrack" data-v="Instructor"><b>Instructor or evaluator</b></button><button type="button" class="'+(track==='Patient'?'on':'')+'" data-act="appTrack" data-v="Patient"><b>Patient (role player) only</b></button></div>';
     var pre=Object.assign({}, a||{}, {name:me.name, email:me.email, phone:me.phone, credentials:me.credentials});
     out+=appForm('ap', pre, track, false)+'<button class="btn" data-act="saveApp" data-track="'+track+'">'+(a?'Save changes':'Submit application')+'</button></div></div>';
     out+='<div class="card"><h3>Email settings</h3>'+prefsForm('pf', me.prefs, d.config.alertTypes, d.config.digests)+'<button class="btn" data-act="savePrefs">Save email settings</button></div>';
@@ -676,7 +685,9 @@
   function roleChecks(cls, sel){ return S.data.config.roles.map(function(r){ return '<label><input type="checkbox" class="'+cls+'" value="'+esc(r.name)+'"'+(sel.indexOf(r.name)>=0||r.openToAll?' checked':'')+(r.openToAll?' disabled title="Open to every approved account"':'')+'> '+esc(r.name)+'</label>'; }).join(''); }
   function vApprovals(){
     var a=S.data.admin, out='<h2>Approvals</h2><p class="sub">New accounts, slot requests and drop requests waiting on you or a co-owner.</p>';
-    var pend=a.instructors.filter(function(i){return i.status==='Pending';});
+    var ups=a.instructors.filter(function(i){return (i.application&&i.application.upgrade&&i.application.upgrade.status==='Pending');});
+    var pend=a.instructors.filter(function(i){return i.status==='Pending' && !(i.application&&i.application.upgrade&&i.application.upgrade.status==='Pending');});
+    if(ups.length) out+='<div class="card"><h3>Instructor applications from patients<span class="cnt">'+ups.length+'</span></h3><p class="small muted">These people work with ResQ as patients and applied to instruct. Tick the roles you\'re clearing them for, then approve, or decline to keep them as patients only.</p>'+ups.map(function(i){ return insCard(i,true,true); }).join('')+'</div>';
     out+='<div class="card"><h3>New instructor accounts'+(pend.length?'<span class="cnt">'+pend.length+'</span>':'')+'</h3>';
     out+= pend.length ? pend.map(function(i){ return insCard(i,true); }).join('') : '<p class="empty">No accounts waiting.</p>';
     out+='</div>';
@@ -713,21 +724,24 @@
     return '<details style="margin-top:6px"><summary class="small" style="cursor:pointer;font-weight:700;color:var(--ember)">View application</summary><dl class="appsum">'+
       rows.filter(function(r){return r[1];}).map(function(r){ return '<dt>'+esc(r[0])+'</dt><dd>'+(r[2]?r[1]:esc(r[1]))+'</dd>'; }).join('')+'</dl></details>';
   }
-  function insCard(i, compact){
+  function insCard(i, compact, upgrade){
     var k=i.email, cls='rc-'+k.replace(/[^a-z0-9]/gi,'');
     var certs = i.certs.length ? i.certs.map(function(c){ return (c.link?'<a href="'+esc(c.link)+'" target="_blank" rel="noopener">'+esc(c.credential)+'</a>':esc(c.credential))+(c.expires?' <span class="muted">(exp '+esc(c.expires)+')</span>':''); }).join(' · ') : '<span class="muted">No cards uploaded</span>';
     return '<div class="ins-card"><div class="ins-top"><div><div class="t">'+esc(i.name)+' '+pill(i.status)+(i.admin?' '+pill('Open','Admin'):'')+'</div><div class="small muted">'+esc(i.email)+' · '+esc(i.phone)+' · applied '+esc(i.applied)+'</div>'+
       '<div class="small">Certifications: '+esc(i.credentials.join(', ')||'-')+'</div><div class="small">Cards: '+certs+(i.folder?' · <a href="'+esc(i.folder)+'" target="_blank" rel="noopener">Drive folder</a>':'')+'</div>'+
+      (i.application&&i.application.upgrade&&i.application.upgrade.status?'<div class="small">Instructor application from patient: '+pill(i.application.upgrade.status)+' <span class="muted">'+esc(i.application.upgrade.requested)+'</span></div>':'')+
       '<div class="small muted">Emails: '+(i.prefs.alerts.length?esc(i.prefs.alerts.join(', ')):'no alerts')+' · list '+esc(i.prefs.digest.toLowerCase())+(i.prefs.reminders?'':' · reminders off')+'</div>'+
       checkChips(i.checklist)+payChips(i.checklist)+appSummary(i)+'</div>'+
       '<div class="small" style="text-align:right">'+i.holding+' active request'+(i.holding===1?'':'s')+'<br>'+i.earnings.approved+' approved · '+money(i.earnings.owed)+' owed</div></div>'+
       '<div style="margin-top:10px"><label>Cleared for roles</label><div class="checks">'+roleChecks(cls,i.roles)+'</div></div>'+
       (compact?'':'<div style="margin-top:8px"><label>Admin notes (only admins see these)</label><input type="text" class="ed" id="note-'+cls+'" value="'+esc(i.notes)+'"></div>')+
-      '<div class="row-tools" style="margin-top:10px">'+
-      (i.status!=='Approved'?'<button class="btn small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">'+(i.checklist.complete?'Approve with these roles':'Approve anyway (missing '+esc(i.checklist.missing.length)+')')+'</button>':'<button class="btn small" data-act="ins" data-op="save" data-email="'+esc(k)+'" data-cls="'+cls+'">Save roles'+(compact?'':' & notes')+'</button>')+
+      '<div class="row-tools" style="margin-top:10px">'+(upgrade ?
+      '<button class="btn small" data-act="ins" data-op="upApprove" data-email="'+esc(k)+'" data-cls="'+cls+'">Approve instructor roles'+(i.checklist.complete?'':' (missing '+esc(i.checklist.missing.length)+')')+'</button>'+
+      '<button class="btn ghost small" data-act="ins" data-op="upDecline" data-email="'+esc(k)+'" data-cls="'+cls+'">Decline, keep as patient</button>' : (
+(i.status!=='Approved'?'<button class="btn small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">'+(i.checklist.complete?'Approve with these roles':'Approve anyway (missing '+esc(i.checklist.missing.length)+')')+'</button>':'<button class="btn small" data-act="ins" data-op="save" data-email="'+esc(k)+'" data-cls="'+cls+'">Save roles'+(compact?'':' & notes')+'</button>')+
       (i.status==='Pending'?'<button class="btn ghost small" data-act="ins" data-op="Declined" data-email="'+esc(k)+'" data-cls="'+cls+'">Decline</button>':'')+
       (i.status==='Approved'?'<button class="btn ghost small" data-act="ins" data-op="Inactive" data-email="'+esc(k)+'" data-cls="'+cls+'">Make inactive</button>':'')+
-      ((i.status==='Declined'||i.status==='Inactive')?'<button class="btn ghost small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">Reactivate</button>':'')+
+      ((i.status==='Declined'||i.status==='Inactive')?'<button class="btn ghost small" data-act="ins" data-op="Approved" data-email="'+esc(k)+'" data-cls="'+cls+'">Reactivate</button>':'')))+
       '</div></div>';
   }
 
@@ -901,6 +915,9 @@
     if(act==='dropCancel'){ S.dropFor=null; render(); return; }
     if(act==='drop'){ var reason=val('drop-reason'); S.dropFor=null; return run(b, authed('apiDrop',id,reason), function(r){ return r.status==='Dropped'?'Released':r.status==='Approved'?'You\'re keeping the slot':'Drop request sent to ResQ'; }); }
     if(act==='ics'){ var r=S.data.requests.filter(function(x){return x.id===id;})[0]; if(r) ics(r); return; }
+    if(act==='upgradeOpen'){ S.upgrading=true; render(); var f=document.getElementById('up-address'); if(f) f.scrollIntoView({block:'center'}); return; }
+    if(act==='upgradeClose'){ S.upgrading=false; render(); return; }
+    if(act==='applyInstructor') return run(b, authed('apiApplyInstructor', readAppForm('up','Instructor')),'Instructor application sent', function(){ S.upgrading=false; S.upKind='Cert card'; });
     if(act==='savePrefs') return run(b, authed('apiSaveMyPrefs', readPrefs('pf')),'Email settings saved');
     if(act==='saveApp') return run(b, authed('apiSaveApplication', readAppForm('ap', b.dataset.track)),'Application saved');
     if(act==='appTrack'){ S.appTrack=b.dataset.v; render(); return; }
@@ -922,8 +939,8 @@
     }
     if(act==='ins'){
       var ch={roles:checked(b.dataset.cls)}; var n=$('note-'+b.dataset.cls); if(n) ch.notes=n.value;
-      if(b.dataset.op!=='save') ch.status=b.dataset.op;
-      return run(b, authed('apiAdminInstructor',b.dataset.email,ch), b.dataset.op==='save'?'Saved':'Account '+b.dataset.op.toLowerCase());
+      if(b.dataset.op==='upApprove') ch.upgrade='Approved'; else if(b.dataset.op==='upDecline') ch.upgrade='Declined'; else if(b.dataset.op!=='save') ch.status=b.dataset.op;
+      return run(b, authed('apiAdminInstructor',b.dataset.email,ch), b.dataset.op==='save'?'Saved':b.dataset.op==='upApprove'?'Instructor application approved':b.dataset.op==='upDecline'?'Declined; kept as patient':'Account '+b.dataset.op.toLowerCase());
     }
     if(act==='saveCourse'){
       var c={name:val('cf-name'),start:val('cf-start'),end:val('cf-end'),location:val('cf-loc'),status:val('cf-status'),description:val('cf-desc')}; if(id) c.id=id;
