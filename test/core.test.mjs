@@ -9,7 +9,7 @@ async function login(ctx, email) {
   await ctx.portal.apiRequestCode(email);
   return (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
 }
-const AGREE_I = ['Instructor code of conduct', 'Independent contractor and pay terms', 'Background check consent'];
+const AGREE_I = ['Instructor code of conduct', 'Independent contractor and pay terms', 'Background check acknowledgment'];
 export const fullApp = (name, email, creds = ['EMT'], extra = {}) => ({ track: 'Instructor', name, email, phone: '651-555-0100', address: '1 Main St, Cottage Grove, MN',
   emergencyName: 'Sam Doe', emergencyPhone: '651-555-0199', credentials: creds, rolesWanted: ['Assistant Instructor'], days: ['Mon', 'Sat'], availabilityNotes: 'Off B shift',
   licenses: { mnEms: '123456', mnEmsExp: '2028-03-31', nremt: 'E1234567', nremtExp: '2028-03-31' }, agency: 'Cottage Grove FD', years: '5', teaching: 'CPR instructor',
@@ -313,7 +313,8 @@ test('opening alerts, digests and the manage-settings link', async () => {
   assert.deepEqual(ad.admin.instructors.find((i) => i.email === 'ann@x.com').prefs, { alerts: ['New course'], digest: 'Off', reminders: true });
   // every instructor email carries a working manage link
   const mail = ctx.mailer.sent.filter((m) => m.to === 'ann@x.com').pop();
-  const link = /\?manage=([^"]+)"/.exec(mail.html);
+  assert.doesNotMatch(mail.html, /<a /); // no links for Brevo to rewrite
+  const link = /\?manage=([^<\s]+)/.exec(mail.html);
   assert.ok(link, 'manage link present');
   const t = decodeURIComponent(link[1]);
   assert.equal((await ctx.portal.apiPrefsGet(t)).email, 'ann@x.com');
@@ -331,7 +332,7 @@ test('opening alerts, digests and the manage-settings link', async () => {
   assert.match(patMail.html, /<b>Patient<\/b>/); assert.doesNotMatch(patMail.html, /Assistant Instructor/);
   // Ann opts into openings-added + weekly digest via the link; Pat turns alerts off
   await ctx.portal.apiPrefsSave(t, { alerts: ['Openings added', 'Near-term openings'], digest: 'Weekly', reminders: false });
-  const pt = decodeURIComponent(/\?manage=([^"]+)"/.exec(patMail.html)[1]);
+  const pt = decodeURIComponent(/\?manage=([^<\s]+)/.exec(patMail.html)[1]);
   await ctx.portal.apiPrefsSave(pt, { alerts: [], digest: 'Off' });
   before = ctx.mailer.sent.length;
   await ctx.portal.apiAdminStaffing(admin, 'EMT-2027-01', 13, true);
