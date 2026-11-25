@@ -326,7 +326,7 @@
   var FORMS={'W-9':{url:'https://www.irs.gov/pub/irs-pdf/fw9.pdf',label:'Blank W-9 (IRS, fillable PDF)'},'Direct deposit':{url:'/forms/resq-direct-deposit-authorization.pdf',label:'ResQ direct deposit form (fillable PDF)'}};
   function formLink(k){ var f=FORMS[k]; return '<a href="'+f.url+'" target="_blank" rel="noopener" download>'+esc(f.label)+'</a>'; }
   function formsBox(){ return '<div class="okbox" style="background:#F4F6F8;color:var(--ink)"><b>Forms to fill out:</b> '+formLink('W-9')+' · '+formLink('Direct deposit')+
-    '<div class="small muted" style="margin-top:4px">Download, fill in and sign, save, then upload below. Upload a voided check (or a bank letter) with the direct deposit form as a second upload.</div></div>'; }
+    '<div class="small muted" style="margin-top:4px">Needed before your first payment, not to apply. Download, fill in and sign, save, then upload below. A voided check or bank letter is optional; upload it as a second direct deposit file if you have one.</div></div>'; }
 
   // ---------- application form ----------
   function cfgPub(){ return S.pub || (S.data && S.data.config) || {roles:[],agreements:[],days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']}; }
@@ -355,10 +355,11 @@
       if(withFiles) h+='<fieldset><legend>Documents (PDF or photo, under 4 MB each)</legend><div class="form-grid">'+
         '<div class="full"><label for="su-f-cert">Copies of your license and certification cards (pick several if needed)</label><input id="su-f-cert" type="file" multiple accept="application/pdf,image/*"></div>'+
         inp('su-certname','Which cards are these?','','text','full',' placeholder="e.g. MN EMT license, NREMT, BLS Instructor"')+
-        '<div><label for="su-f-resume">Resume (PDF or Word)</label><input id="su-f-resume" type="file" accept="application/pdf,.doc,.docx"></div>'+
+        '<div class="full"><label for="su-f-resume">Resume (PDF or Word)</label><input id="su-f-resume" type="file" accept="application/pdf,.doc,.docx"></div></div></fieldset>'+
+        '<fieldset><legend>Payroll forms (optional now)</legend><p class="small muted" style="margin:0 0 10px">You don\'t need these to apply, only before your first payment. Add them now or later on the Application tab.</p><div class="form-grid">'+
         '<div><label for="su-f-w9">W-9 <span class="small" style="font-weight:500">('+formLink('W-9').replace('Blank W-9 (IRS, fillable PDF)','get the blank form')+')</span></label><input id="su-f-w9" type="file" accept="application/pdf,image/*"></div>'+
-        '<div class="full"><label for="su-f-dd">Direct deposit form and voided check <span class="small" style="font-weight:500">('+formLink('Direct deposit').replace('ResQ direct deposit form (fillable PDF)','get the blank form')+')</span></label><input id="su-f-dd" type="file" multiple accept="application/pdf,image/*"></div></div>'+
-        '<p class="note">The W-9 and direct deposit form go to a locked folder that only ResQ\'s payroll contact can open. They\'re never shown in the portal. You can also add any of these later.</p></fieldset>';
+        '<div class="full"><label for="su-f-dd">Direct deposit form, plus a voided check if you have one <span class="small" style="font-weight:500">('+formLink('Direct deposit').replace('ResQ direct deposit form (fillable PDF)','get the blank form')+')</span></label><input id="su-f-dd" type="file" multiple accept="application/pdf,image/*"></div></div>'+
+        '<p class="note">These go to a locked folder only ResQ\'s payroll contact can open, and they\'re never shown in the portal. We\'ll email you to confirm each upload.</p></fieldset>';
     }
     var ag=(c.agreements||[]).filter(function(x){ return x.appliesTo==='Both'||x.appliesTo===track; });
     h+='<fieldset><legend>Agreements</legend>'+ag.map(function(x,i){ return '<details class="agr"><summary>'+esc(x.name)+'</summary><p>'+esc(x.text)+'</p></details>'+
@@ -372,6 +373,7 @@
       agency:val(px+'-agency'), years:val(px+'-years'), teaching:val(px+'-teach'), rolesWanted:checked(px+'-role'), days:checked(px+'-day'), availabilityNotes:val(px+'-avnotes'),
       refs:refs, agreed:checked(px+'-agr') };
   }
+  function payChips(cl, label){ var p=cl.payroll; return '<div class="cl" style="align-items:center"><span style="background:none;padding:0;font-weight:600;color:var(--slate)">'+(label||'Before first payment:')+'</span>'+p.items.map(function(i){ return '<span class="'+(i.done?'y':'n')+'" style="'+(i.done?'':'background:#F4F6F8;color:var(--slate)')+'">'+(i.done?'✓ ':'○ ')+esc(i.label)+'</span>'; }).join('')+'</div>'; }
   function checkChips(cl){ return '<div class="cl">'+cl.items.map(function(i){ return '<span class="'+(i.done?'y':'n')+'">'+(i.done?'✓ ':'✗ ')+esc(i.label)+'</span>'; }).join('')+'</div>'; }
 
   // ---------- email settings ----------
@@ -471,6 +473,7 @@
   // ---------- Earnings ----------
   function vEarn(){
     var d=S.data, e=d.earnings, out='<h2>Earnings</h2><p class="sub">What you\'ve earned on approved slots. Amounts come from each slot\'s pay rate.</p>';
+    if(d.me.checklist && !d.me.checklist.payroll.complete && e.approved) out+='<div class="warnbox">ResQ can\'t pay you until you upload your <b>'+esc(d.me.checklist.payroll.missing.join(' and '))+'</b>. <button class="linkbtn" data-act="tab" data-v="profile">Add them on the Application tab</button></div>';
     out+='<div class="grid g4" style="margin-bottom:16px"><div class="stat"><div class="n">'+e.approved+'</div><div class="l">Approved slots</div></div><div class="stat"><div class="n">'+money(e.upcoming)+'</div><div class="l">Upcoming</div></div>'+
       '<div class="stat accent"><div class="n">'+money(e.owed)+'</div><div class="l">Worked, not paid yet</div></div><div class="stat"><div class="n">'+money(e.paid)+'</div><div class="l">Paid</div></div></div>';
     var rs=d.requests.filter(function(r){return r.status==='Approved';});
@@ -485,12 +488,13 @@
     var d=S.data, me=d.me, cl=me.checklist, a=me.application, track=(a&&a.track)||S.appTrack||'Instructor';
     var out='<h2>My application</h2><p class="sub">Keep your application and documents current. ResQ uses them to approve your account and clear you for roles.</p>';
     out+='<div class="card"><div><b>Status:</b> '+pill(me.status)+' <span class="small muted">Cleared for: '+(me.roles.length?esc(me.roles.join(', ')):'none yet')+'</span></div>'+
-      checkChips(cl)+(cl.complete?'<p class="small" style="color:var(--ok);margin:4px 0 0">Everything ResQ needs is in.</p>':'<p class="small muted" style="margin:4px 0 0">Still needed: '+esc(cl.missing.join(', '))+'</p>')+'</div>';
-    out+='<div class="grid g2"><div class="card"><h3>Documents</h3>'+(track==='Instructor'?formsBox():'');
+      checkChips(cl)+(cl.complete?'<p class="small" style="color:var(--ok);margin:4px 0 0">Your application is complete.</p>':'<p class="small muted" style="margin:4px 0 0">Still needed to apply: '+esc(cl.missing.join(', '))+'</p>')+
+      payChips(cl,'Payroll forms (needed before your first payment, not to apply):')+'</div>';
+    out+='<div class="grid g2"><div class="card"><h3>Documents</h3>'+formsBox();
     out+= d.certs.length ? '<div class="list">'+d.certs.map(function(c){ var priv=c.kind==='W-9'||c.kind==='Direct deposit';
       return '<div class="row"><div><div class="t">'+esc(c.kind==='Cert card'?c.credential:c.kind)+'</div><div class="s">'+(priv?'On file (private)':esc(c.fileName))+'</div></div><div class="s">'+(c.expires?'Expires '+esc(c.expires)+'<br>':'')+'Uploaded '+esc(c.uploaded)+'</div></div>'; }).join('')+'</div>' : '<p class="empty">No documents uploaded yet.</p>';
     if(d.config.uploads){
-      var kinds=track==='Patient'?['Cert card']:['Cert card','Resume','W-9','Direct deposit'];
+      var kinds=track==='Patient'?['Cert card','W-9','Direct deposit']:['Cert card','Resume','W-9','Direct deposit'];
       if(kinds.indexOf(S.upKind)<0) S.upKind='Cert card';
       out+='<div style="margin-top:12px"><label>Upload a document</label>'+chips('upKind',kinds.map(function(k){return [k,k==='Cert card'?'Cert or license card':k];}),S.upKind)+'</div><div class="form-grid" style="margin-top:10px">';
       if(S.upKind==='Cert card') out+='<div><label>Which card</label><select id="up-cred"><option value="">Pick one…</option>'+['MN EMS license','NREMT card'].concat(CREDS).concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div><label>Expires</label><input id="up-exp" type="date"></div>';
@@ -585,7 +589,7 @@
     return '<div class="ins-card"><div class="ins-top"><div><div class="t">'+esc(i.name)+' '+pill(i.status)+(i.admin?' '+pill('Open','Admin'):'')+'</div><div class="small muted">'+esc(i.email)+' · '+esc(i.phone)+' · applied '+esc(i.applied)+'</div>'+
       '<div class="small">Certifications: '+esc(i.credentials.join(', ')||'-')+'</div><div class="small">Cards: '+certs+(i.folder?' · <a href="'+esc(i.folder)+'" target="_blank" rel="noopener">Drive folder</a>':'')+'</div>'+
       '<div class="small muted">Emails: '+(i.prefs.alerts.length?esc(i.prefs.alerts.join(', ')):'no alerts')+' · list '+esc(i.prefs.digest.toLowerCase())+(i.prefs.reminders?'':' · reminders off')+'</div>'+
-      checkChips(i.checklist)+appSummary(i)+'</div>'+
+      checkChips(i.checklist)+payChips(i.checklist)+appSummary(i)+'</div>'+
       '<div class="small" style="text-align:right">'+i.holding+' active request'+(i.holding===1?'':'s')+'<br>'+i.earnings.approved+' approved · '+money(i.earnings.owed)+' owed</div></div>'+
       '<div style="margin-top:10px"><label>Cleared for roles</label><div class="checks">'+roleChecks(cls,i.roles)+'</div></div>'+
       (compact?'':'<div style="margin-top:8px"><label>Admin notes (only admins see these)</label><input type="text" class="ed" id="note-'+cls+'" value="'+esc(i.notes)+'"></div>')+
@@ -700,7 +704,7 @@
       return '<tr><td>'+esc(r.dateText)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.role)+' · Day '+esc(r.day)+' '+esc(r.block)+'<div class="small muted">'+esc(r.course.replace('Accelerated EMT — ',''))+'</div></td>'+
         '<td><input class="ed" id="amt-'+k+'" type="number" min="0" step="5" value="'+esc(r.amount)+'" style="width:90px"'+(r.paid?' disabled':'')+'>'+(r.amountSet&&!r.paid?'<div class="small muted">custom</div>':'')+'</td>'+
         '<td>'+pill(r.pay)+(r.paidOn?' <span class="small muted">'+esc(r.paidOn)+'</span>':'')+'</td><td class="row-tools">'+
-        (r.paid?'<button class="btn ghost small" data-act="req" data-op="unpaid" data-id="'+esc(r.id)+'">Undo paid</button>':'<button class="btn small" data-act="paid" data-id="'+esc(r.id)+'" data-k="'+k+'">Mark paid</button><button class="btn ghost small" data-act="amount" data-id="'+esc(r.id)+'" data-k="'+k+'">Save amount</button>')+'</td></tr>';
+        (r.paid?'<button class="btn ghost small" data-act="req" data-op="unpaid" data-id="'+esc(r.id)+'">Undo paid</button>':(r.payrollReady?'<button class="btn small" data-act="paid" data-id="'+esc(r.id)+'" data-k="'+k+'">Mark paid</button>':'<span class="small" style="color:var(--ember)" title="Upload of W-9 and direct deposit form is required before payment">Needs payroll forms</span>')+'<button class="btn ghost small" data-act="amount" data-id="'+esc(r.id)+'" data-k="'+k+'">Save amount</button>')+'</td></tr>';
     }).join('')+'</tbody></table></div>' : '<div class="card"><p class="empty">Nothing here.</p></div>';
     var per={}; base.forEach(function(r){ var p=per[r.email]=per[r.email]||{name:r.name,n:0,Owed:0,Upcoming:0,Paid:0}; p.n++; p[r.pay]+=r.amount; });
     var rows=Object.keys(per).map(function(k){return per[k];}).sort(function(x,y){return y.Owed-x.Owed || x.name.localeCompare(y.name);});

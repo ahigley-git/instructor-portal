@@ -135,12 +135,17 @@ test('pay: bulk set by role/block, earnings, mark paid with email toggle', async
   assert.equal(n.updated, 12);
   await ctx.portal.apiAdminBulkPay(admin, 'EMT-2027-01', 'Primary Instructor', 'PM', 350);
   const t = await signup(ctx, 'Lee Lead', 'lee@x.com', ['Paramedic']);
+  const payForms = async () => { for (const kind of ['W-9', 'Direct deposit']) await ctx.portal.apiUploadDoc(t, { kind, fileName: 'f.pdf', mime: 'application/pdf', data: 'AAAA' }); };
   await ctx.portal.apiAdminInstructor(admin, 'lee@x.com', { status: 'Approved', roles: ['Primary Instructor'] });
   await ctx.portal.apiAdminAssign(admin, 'EMT-2027-01-D03-AM-PRI', 'lee@x.com');
   await ctx.portal.apiAdminAssign(admin, 'EMT-2027-01-D03-PM-PRI', 'lee@x.com');
   let d = await ctx.portal.apiGetData(t);
   assert.equal(d.earnings.upcoming, 750);
   assert.equal(slot(d, 'EMT-2027-01-D05-PM-PRI').pay, 350);
+  const ad0 = await ctx.portal.apiGetData(admin);
+  assert.equal(ad0.admin.requests.find((r) => r.slotId === 'EMT-2027-01-D03-AM-PRI').payrollReady, false);
+  await rejects(ctx.portal.apiAdminRequest(admin, reqOf(d, 'EMT-2027-01-D03-AM-PRI').id, 'paid', 425), /W-9 and Direct deposit yet/);
+  await payForms();
   await ctx.portal.apiAdminSettings(admin, { 'Email instructor: marked paid': false });
   const before = ctx.mailer.sent.length;
   await ctx.portal.apiAdminRequest(admin, reqOf(d, 'EMT-2027-01-D03-AM-PRI').id, 'paid', 425);
@@ -215,11 +220,18 @@ test('application checklist, private pay forms, patient track', async () => {
   assert.equal(d.me.application.licenses.mnEms, '123456');
   assert.equal(d.me.application.licenses.mnEmsExp, '2028-03-31');
   assert.equal(d.me.application.refs[1].email, 'r2@x.com');
-  assert.deepEqual(d.me.checklist.missing, ['Cert card', 'Resume', 'W-9', 'Direct deposit']);
+  assert.deepEqual(d.me.checklist.missing, ['Cert card', 'Resume']);
+  assert.deepEqual(d.me.checklist.payroll.missing, ['W-9', 'Direct deposit']);
   await ctx.portal.apiUploadDoc(t, { kind: 'Cert card', credential: 'EMT', fileName: 'c.jpg', mime: 'image/jpeg', data: 'AAAA' });
   await rejects(ctx.portal.apiUploadDoc(t, { kind: 'Resume', fileName: 'r.jpg', mime: 'image/jpeg', data: 'AAAA' }), /PDF or Word/);
   await ctx.portal.apiUploadDoc(t, { kind: 'Resume', fileName: 'r.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: 'AAAA' });
+  d = await ctx.portal.apiGetData(t);
+  assert.equal(d.me.checklist.complete, true); // payroll forms aren't needed to apply
+  assert.equal(d.me.checklist.payroll.complete, false);
+  const nBefore = ctx.mailer.sent.length;
   await ctx.portal.apiUploadDoc(t, { kind: 'W-9', fileName: 'w9.pdf', mime: 'application/pdf', data: 'AAAA' });
+  const conf = ctx.mailer.sent.slice(nBefore).find((m) => m.to === 'ivy@x.com');
+  assert.match(conf.subject, /W-9 form was uploaded/); assert.match(conf.html, /If you didn't/);
   await ctx.portal.apiUploadDoc(t, { kind: 'Direct deposit', fileName: 'dd.pdf', mime: 'application/pdf', data: 'AAAA' });
   // pay forms go to the private folder, never get a link
   const priv = ctx.files.made.filter((m) => m.folderId === 'PRIV');
@@ -227,7 +239,7 @@ test('application checklist, private pay forms, patient track', async () => {
   const certRows = ctx.tabs.Certs.slice(1);
   for (const r of certRows.filter((r) => r[7] === 'W-9' || r[7] === 'Direct deposit')) { assert.equal(r[5], ''); assert.equal(r[6], ''); }
   d = await ctx.portal.apiGetData(t);
-  assert.equal(d.me.checklist.complete, true);
+  assert.equal(d.me.checklist.payroll.complete, true);
   const ad = await ctx.portal.apiGetData(admin);
   const ivy = ad.admin.instructors.find((i) => i.email === 'ivy@x.com');
   assert.equal(ivy.checklist.complete, true);

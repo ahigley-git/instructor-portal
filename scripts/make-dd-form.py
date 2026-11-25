@@ -43,8 +43,9 @@ def field(name, label, x, w, tooltip=None, maxlen=None):
     if maxlen: kw['maxlen'] = maxlen
     f.textfield(**kw)
 
-para('Fill this out, sign it, and upload it with a voided check (or a bank letter showing the routing and account numbers) '
-     'on the Application tab of the ResQ Instructor Portal. Please don\'t email it. Uploads go to a locked folder only ResQ\'s payroll contact can open.')
+para('Fill this out, sign it, and upload it on the Application tab of the ResQ Instructor Portal. A voided check or a bank letter showing the '
+     'routing and account numbers is optional but helps us avoid typos; upload it with the form if you have one. Please don\'t email this form. '
+     'Uploads go to a locked folder only ResQ\'s payroll contact can open.')
 
 section('1. Your information')
 full = W - 2 * M
@@ -75,7 +76,7 @@ field('signature', 'Signature (type your full name to sign)', M, full * 0.62); f
 
 c.setStrokeColor(LINE); c.line(M, y, W - M, y); y -= 16
 c.setFillColor(INK); c.setFont('Helvetica-Bold', 9); c.drawString(M, y, 'For ResQ payroll only'); y -= 38
-field('office_entered', 'Entered in payroll by', M, full * 0.45); field('office_date', 'Date entered', M + full * 0.5, full * 0.25); field('office_verified', 'Voided check received (Y/N)', M + full * 0.78, full * 0.22)
+field('office_entered', 'Entered in payroll by', M, full * 0.45); field('office_date', 'Date entered', M + full * 0.5, full * 0.25); field('office_verified', 'Confirmed by phone (Y/N)', M + full * 0.78, full * 0.22)
 
 c.setFillColor(SLATE); c.setFont('Helvetica', 7.5)
 c.drawString(M, 36, 'ResQ Education LLC  ·  Confidential once completed. Keep a copy for your records.')
