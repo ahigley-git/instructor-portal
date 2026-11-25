@@ -38,8 +38,6 @@ addReq('EMT-2027-01-D01-PM-PRI', 'admin@resqedu.com', 'Adam Higley', 'Approved')
 addReq('EMT-2027-01-D02-AM-PRI', 'matt.shen@resqedu.com', 'Matt Shen', 'Approved');
 addReq('EMT-2027-01-D01-PM-BLS', 'sarah@example.com', 'Sarah Lund', 'Approved');
 addReq('EMT-2027-01-D03-PM-AST', 'sarah@example.com', 'Sarah Lund', 'Pending');
-addReq('EMT-2027-01-D11-PM-EVAL', 'jordan@example.com', 'Jordan Ruiz', 'Pending');
-addReq('EMT-2027-01-D10-AM-MED', 'jordan@example.com', 'Jordan Ruiz', 'Pending');
 addReq('EMT-2027-01-D04-PM-PAT', 'priya@example.com', 'Priya Nair', 'Pending');
 addReq('EMT-2027-01-D02-AM-PRI', 'sarah@example.com', 'Sarah Lund', 'Waitlist');
 const addApp = (email, track, o = {}) => tabs.Applications.push(head('Applications').map((h) => ({ Email: email, Track: track, Submitted: serial('11/20/2026'), Updated: serial('11/20/2026'),

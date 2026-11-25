@@ -14,11 +14,17 @@ export const fullApp = (name, email, creds = ['EMT'], extra = {}) => ({ track: '
   emergencyName: 'Sam Doe', emergencyPhone: '651-555-0199', credentials: creds, rolesWanted: ['Assistant Instructor'], days: ['Mon', 'Sat'], availabilityNotes: 'Off B shift',
   licenses: { mnEms: '123456', mnEmsExp: '2028-03-31', nremt: 'E1234567', nremtExp: '2028-03-31' }, agency: 'Cottage Grove FD', years: '5', teaching: 'CPR instructor',
   refs: [{ name: 'Ref One', relationship: 'Captain', phone: '651-555-0001' }, { name: 'Ref Two', relationship: 'Medic', email: 'r2@x.com' }], agreed: AGREE_I, ...extra });
-async function signup(ctx, name, email, creds = ['EMT']) {
+// Signs someone up; instructor-track accounts are approved (and cleared for teaching roles) unless opt.pending.
+async function signup(ctx, name, email, creds = ['EMT'], opt = {}) {
   clearRl(ctx);
   const patient = creds.includes('Student / pre-health (patient role)');
   await ctx.portal.apiSignup(patient ? { track: 'Patient', name, email, phone: '651-555-0100', emergencyName: 'Mom', emergencyPhone: '651-555-0102', agreed: ['Patient volunteer code of conduct and waiver'] } : fullApp(name, email, creds));
-  return (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
+  const token = (await ctx.portal.apiVerifyCode(email, lastCode(ctx.mailer, email))).token;
+  if (!patient && !opt.pending) {
+    ctx._adm = ctx._adm || await login(ctx, 'admin@resqedu.com');
+    await ctx.portal.apiAdminInstructor(ctx._adm, email, { status: 'Approved', roles: opt.roles || ['Primary Instructor', 'Assistant Instructor', 'Skills Evaluator'] });
+  }
+  return token;
 }
 const rejects = (p, re) => assert.rejects(p, (e) => (re ? re.test(e.message) : true));
 const slot = (d, id) => d.courses.flatMap((c) => c.sessions).flatMap((s) => s.slots).find((s) => s.id === id);
@@ -47,7 +53,7 @@ test('signup, login and pending accounts', async () => {
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { refs: [{ name: 'A', phone: '1' }] })), /two professional references/);
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { agreed: ['Instructor code of conduct'] })), /Independent contractor/);
   await rejects(ctx.portal.apiSignup(fullApp('Jo Smith', 'jo@x.com', ['EMT'], { licenses: {} })), /license or certification number/);
-  const t = await signup(ctx, 'Jo Smith', 'Jo@X.com');
+  const t = await signup(ctx, 'Jo Smith', 'Jo@X.com', ['EMT'], { pending: true });
   assert.ok(ctx.mailer.sent.some((m) => m.to === 'admin@resqedu.com' && /New instructor application/.test(m.subject)));
   const d = await ctx.portal.apiGetData(t);
   assert.equal(d.me.status, 'Pending');
@@ -73,10 +79,20 @@ test('wrong code lockout and rate limit', async () => {
 test('holds, waitlist, approval rules, auto-promote', async () => {
   const ctx = makePortal();
   const admin = await login(ctx, 'admin@resqedu.com');
-  const a = await signup(ctx, 'Amy Able', 'amy@x.com');
+  const a = await signup(ctx, 'Amy Able', 'amy@x.com', ['EMT'], { pending: true });
   const b = await signup(ctx, 'Ben Baker', 'ben@x.com');
   const SL = 'EMT-2027-01-D01-AM-PRI'; // 1 opening
-  // Pending account can hold a slot
+  // A pending instructor can't request anything, not even patient slots
+  await rejects(ctx.portal.apiRequestSlot(a, SL), /still being reviewed/);
+  await rejects(ctx.portal.apiRequestSlot(a, 'EMT-2027-01-D04-PM-PAT'), /still being reviewed/);
+  let d0 = await ctx.portal.apiGetData(a);
+  assert.equal(slot(d0, SL).canRequest, false);
+  // Approved but not cleared for the role: blocked
+  await ctx.portal.apiAdminInstructor(admin, 'amy@x.com', { status: 'Approved', roles: [] });
+  assert.ok(ctx.mailer.sent.some((m) => m.to === 'amy@x.com' && /approved to teach/.test(m.subject)));
+  await rejects(ctx.portal.apiRequestSlot(a, SL), /not cleared for Primary Instructor/);
+  assert.equal((await ctx.portal.apiRequestSlot(a, 'EMT-2027-01-D04-PM-PAT')).status, 'Pending'); // Patient is open to all approved
+  await ctx.portal.apiAdminInstructor(admin, 'amy@x.com', { roles: ['Primary Instructor', 'Not a role'] });
   let r = await ctx.portal.apiRequestSlot(a, SL);
   assert.equal(r.status, 'Pending');
   await rejects(ctx.portal.apiRequestSlot(a, SL), /already requested/);
@@ -87,13 +103,7 @@ test('holds, waitlist, approval rules, auto-promote', async () => {
   assert.equal(slot(d, SL).people, undefined); // names hidden from instructors
   // Can't hold two roles in one block
   await rejects(ctx.portal.apiRequestSlot(a, 'EMT-2027-01-D01-AM-PRI'.replace('PRI', 'X')), /no longer exists/);
-  // Approval needs approved account + role
   const amyReq = reqOf(await ctx.portal.apiGetData(a), SL).id;
-  await rejects(ctx.portal.apiAdminRequest(admin, amyReq, 'approve'), /account first/);
-  await ctx.portal.apiAdminInstructor(admin, 'amy@x.com', { status: 'Approved', roles: [] });
-  assert.ok(ctx.mailer.sent.some((m) => m.to === 'amy@x.com' && /approved to teach/.test(m.subject)));
-  await rejects(ctx.portal.apiAdminRequest(admin, amyReq, 'approve'), /qualified/);
-  await ctx.portal.apiAdminInstructor(admin, 'amy@x.com', { roles: ['Primary Instructor', 'Not a role'] });
   await ctx.portal.apiAdminRequest(admin, amyReq, 'approve');
   d = await ctx.portal.apiGetData(admin);
   assert.deepEqual(slot(d, SL).people.map((p) => p.status), ['Approved', 'Waitlist']);
@@ -113,14 +123,16 @@ test('patients are open to any approved account; waitlisted can drop', async () 
   const admin = await login(ctx, 'admin@resqedu.com');
   const p = await signup(ctx, 'Pat Patient', 'pat@x.com', ['Student / pre-health (patient role)']);
   const SL = 'EMT-2027-01-D04-PM-PAT';
-  await ctx.portal.apiRequestSlot(p, SL);
+  assert.equal((await ctx.portal.apiRequestSlot(p, SL)).status, 'Pending'); // pending patient volunteers can hold patient slots
   await ctx.portal.apiAdminInstructor(admin, 'pat@x.com', { status: 'Approved' });
   await ctx.portal.apiAdminRequest(admin, reqOf(await ctx.portal.apiGetData(p), SL).id, 'approve');
   assert.equal(reqOf(await ctx.portal.apiGetData(p), SL).status, 'Approved');
   // Fill a 1-opening slot, waitlist, drop from waitlist
   const q = await signup(ctx, 'Quinn Q', 'q@x.com');
+  const o = await signup(ctx, 'Oli O', 'o@x.com');
   const W = 'EMT-2027-01-D02-AM-PRI';
-  await ctx.portal.apiRequestSlot(p, W);
+  await rejects(ctx.portal.apiRequestSlot(p, W), /not cleared for Primary Instructor/); // patients stay in patient slots
+  await ctx.portal.apiRequestSlot(o, W);
   await ctx.portal.apiRequestSlot(q, W);
   const qr = reqOf(await ctx.portal.apiGetData(q), W);
   assert.equal(qr.status, 'Waitlist');

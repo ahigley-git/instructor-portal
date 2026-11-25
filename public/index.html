@@ -251,7 +251,7 @@
         <div class="signup-link">New to teaching or volunteering with ResQ? <button class="linkbtn" id="btn-show-signup" type="button">Apply here</button></div>
       </div>
       <div id="step-signup" class="hidden">
-        <p>Apply to teach or volunteer with ResQ. You can hold class slots as soon as you apply; ResQ reviews your application and documents before approving them.</p>
+        <p>Apply to teach or volunteer with ResQ. Once ResQ reviews and approves your application, you can sign up for class slots. Patient volunteers can hold patient slots right away.</p>
         <form id="form-signup"><div id="su-form"><div class="loading"><div class="spinner"></div>Loading the application…</div></div>
           <div style="height:14px"></div>
           <button class="btn block" id="btn-signup" type="submit">Submit application and send my code</button>
@@ -528,8 +528,12 @@
   // ---------- Open slots ----------
   function vSlots(){
     var d=S.data, me=d.me, out='';
-    out+='<h2>'+(me.isInstructor?'Open slots':'Course overview')+'</h2><p class="sub">Pick the blocks you can teach. Your request holds the spot until a ResQ admin approves it. If a slot is full, you join the waitlist and move up automatically.</p>';
-    if(me.isInstructor && me.status==='Pending') out+='<div class="warnbox"><b>Your account is under review.</b> You can request slots now and they\'ll be held for you. ResQ will check your application and documents, then approve your account and your slots.</div>';
+    out+='<h2>'+(me.isInstructor?'Open slots':'Course overview')+'</h2><p class="sub">Pick the blocks you can teach in roles you\'re cleared for. Your request holds the spot until a ResQ admin approves it. If a slot is full, you join the waitlist and move up automatically.</p>';
+    var isPat = me.checklist && me.checklist.track==='Patient';
+    if(me.isInstructor && me.status==='Pending') out+= isPat ? '<div class="warnbox"><b>Your application is under review.</b> You can request patient slots now and they\'ll be held for you until ResQ approves you.</div>'
+      : '<div class="warnbox"><b>Your application is under review.</b> You can browse the schedule now and request slots once ResQ approves your application. We\'ll email you when it\'s approved.</div>';
+    if(me.isInstructor && me.status==='Approved' && !isPat) S.onlyMine = S.onlyMine===undefined ? true : S.onlyMine;
+    if(me.isInstructor && me.status==='Approved' && !isPat) out+='<div class="toolbar" style="margin-top:-6px"><label class="small" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600"><input type="checkbox" data-act="onlyMine"'+(S.onlyMine?' checked':'')+'> Only roles I\'m cleared for</label></div>';
     if(me.isInstructor && me.checklist && !me.checklist.complete) out+='<div class="warnbox">Your application is missing: <b>'+esc(me.checklist.missing.join(', '))+'</b>. <button class="linkbtn" data-act="tab" data-v="profile">Finish it on the Application tab</button></div>';
     if(!d.courses.length) return out+'<div class="card"><p class="empty">No courses are open for sign-up right now.</p></div>';
     var course = d.courses.filter(function(c){return c.id===S.course;})[0] || d.courses[0];
@@ -544,7 +548,7 @@
     order.forEach(function(k){
       var sess=byDay[k], blocks='';
       sess.forEach(function(s){
-        var slots=s.slots.filter(function(sl){ return (S.role==='All'||sl.role===S.role) && (!S.onlyOpen || sl.held<sl.openings || sl.mine) && (me.isAdmin || sl.status==='Open'); });
+        var slots=s.slots.filter(function(sl){ return (S.role==='All'||sl.role===S.role) && (!S.onlyOpen || sl.held<sl.openings || sl.mine) && (me.isAdmin || sl.status==='Open') && (!S.onlyMine || me.status!=='Approved' || sl.canRequest || sl.mine); });
         if(!slots.length) return;
         blocks+='<div class="blk"><div class="blk-h"><span class="b">'+esc(s.block||'')+'</span><b class="tm">'+tm(s.start)+'–'+tm(s.end)+'</b><span class="tp">'+esc(s.topic)+'</span>'+(s.status!=='Open'?pill(s.status):'')+'</div>'+
           slots.map(function(sl){ return slotRow(sl,s); }).join('')+'</div>';
@@ -561,11 +565,11 @@
     if(sl.mine){
       act=sl.mine.status==='Waitlist' ? pill('Waitlist','Waitlist #'+sl.mine.position) : pill(sl.mine.status);
       act+=' <button class="btn ghost small" data-act="gomine">Manage</button>';
-    } else if(me.isInstructor && !s.past && sl.status==='Open' && s.status==='Open'){
+    } else if(me.isInstructor && !s.past && sl.status==='Open' && s.status==='Open' && sl.canRequest){
       act='<button class="btn small'+(left>0?'':' dark')+'" data-act="request" data-id="'+esc(sl.id)+'">'+(left>0?'Request':'Join waitlist')+'</button>';
     }
     var fill = left>0 ? '<b>'+left+'</b> of '+sl.openings+' open' : '<b>Full</b>'+(sl.waitlist?' · '+sl.waitlist+' waiting':'')+(me.isAdmin&&sl.over?' · <span style="color:#5B3A8C">over by '+sl.over+'</span>':'');
-    var warn = me.isInstructor && me.status==='Approved' && !sl.qualified && !sl.mine ? '<div class="n" style="color:var(--warn)">You\'re not cleared for this role yet. You can still request it and ResQ will review.</div>' : '';
+    var warn = me.isInstructor && me.status==='Approved' && !sl.canRequest && !sl.mine ? '<div class="n" style="color:var(--slate)">Not cleared for this role yet.</div>' : '';
     var people = sl.people && sl.people.length ? '<div class="people">'+sl.people.map(function(p){ return '<span class="pp">'+esc(p.name)+' '+pill(p.status, p.status==='Waitlist'?'WL':p.status)+'</span>'; }).join('')+'</div>' : '';
     return '<div class="slot"><div><div class="r">'+esc(sl.role)+(sl.status!=='Open'?' '+pill(sl.status):'')+'</div>'+(sl.notes?'<div class="n">'+esc(sl.notes)+'</div>':'')+
       (role.requirements?'<div class="n"><i>Requires:</i> '+esc(role.requirements)+'</div>':'')+warn+people+'</div>'+
@@ -948,6 +952,7 @@
   document.addEventListener('change', function(ev){
     var t=ev.target;
     if(t.dataset && t.dataset.act==='onlyOpen'){ S.onlyOpen=t.checked; render(); }
+    if(t.dataset && t.dataset.act==='onlyMine'){ S.onlyMine=t.checked; render(); }
     if(t.dataset && t.dataset.act==='calGaps'){ S.calGaps=t.checked; render(); }
     if(t.dataset && t.dataset.act==='digestPick'){ syncDigestChips(t.name.replace('-digest','')); }
   });
