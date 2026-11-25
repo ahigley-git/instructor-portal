@@ -199,7 +199,8 @@
   .switch input{width:18px;height:18px}
   .switch .d{font-size:13px;color:var(--slate)}
   .login.wide{max-width:760px}
-  .req{color:var(--ember);font-weight:800}
+  .req{color:#D11F1F;font-weight:800;font-size:1.15em;line-height:0;margin-left:2px}
+  .req[hidden]{display:none}
   .bad,input.bad,textarea.bad{border-color:var(--ember)!important;box-shadow:0 0 0 2px var(--ember-soft)}
   .checks.bad,fieldset.bad{border-radius:8px;outline:2px solid var(--ember-soft)}
   input[type=date],input[type=number]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;outline:none;min-height:44px}
@@ -372,7 +373,7 @@
   }
   function showSignup(){
     $('login').querySelector('.login').classList.add('wide'); setMsg(''); step('signup');
-    var draw=function(){ $('su-form').innerHTML = appForm('su', {email:$('email').value.trim()}, S.track, true); };
+    var draw=function(){ $('su-form').innerHTML = appForm('su', {email:$('email').value.trim()}, S.track, true); syncReq('su'); };
     if(S.pub) return draw();
     api('apiPublicConfig').then(function(c){ S.pub=c; draw(); }).catch(function(e){ $('su-form').innerHTML='<p class="msg err">'+esc(e.message)+'</p>'; });
   }
@@ -442,6 +443,7 @@
     if(!tabs.some(function(t){return t[0]===S.tab;})) S.tab=tabs[0][0];
     $('tabs').innerHTML = tabs.map(function(t){ return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'">'+t[1]+(t[2]?'<span class="cnt">'+t[2]+'</span>':'')+'</button>'; }).join('');
     var y=window.scrollY;
+    setTimeout(syncAllReq,0);
     $('view').innerHTML = ({slots:vSlots,cal:vCal,mine:vMine,earn:vEarn,profile:vProfile,approvals:vApprovals,instructors:vInstructors,builder:vBuilder,payments:vPayments,settings:vSettings}[S.tab])();
     window.scrollTo(0,y);
   }
@@ -457,6 +459,18 @@
   function inp(id,label,v,type,cls,extra){ return '<div class="'+(cls||'')+'"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(v||'')+'"'+(extra||'')+'></div>'; }
   var REQ='<span class="req" title="Required">*</span>';
   var EMS_CREDS=['EMR','EMT','AEMT','Paramedic'], AHA_CREDS=['AHA BLS Instructor','AHA ACLS/PALS Instructor'], OTHER_LIC_CREDS=['RN','Physician / PA / NP'];
+  // A required-mark that turns on or off with the certifications checked (see syncReq).
+  function dyn(px, f){ return '<span class="req" id="'+px+'-'+f+'-req" title="Required for the certifications you checked" hidden>*</span>'; }
+  function syncReq(px){
+    if(!$(px+'-mnems')) return;
+    var cr=checked(px+'-cred'), has=function(list){ return cr.some(function(x){ return list.indexOf(x)>=0; }); };
+    var show=function(f,on){ var e=$(px+'-'+f+'-req'); if(e) e.hidden=!on; };
+    [['mnems',EMS_CREDS],['nremt',EMS_CREDS],['aha',AHA_CREDS],['othernum',OTHER_LIC_CREDS]].forEach(function(x){
+      var need=has(x[1]); show(x[0],need); show(x[0].replace('num','')+'exp', need || !!val(px+'-'+x[0]).trim());
+    });
+    show('othertype', has(OTHER_LIC_CREDS));
+  }
+  function syncAllReq(){ ['su','ap','up'].forEach(syncReq); }
   // mode: 'signup' (track choice, documents and payroll uploads), 'upgrade' (documents), 'edit' (no uploads)
   function appForm(px, a, track, mode){
     if(mode===true) mode='signup'; if(!mode) mode='edit';
@@ -474,9 +488,9 @@
       h+='<fieldset><legend>Certifications</legend><label>Certifications you hold '+REQ+'</label><div class="checks" id="'+px+'-creds">'+credChecks(px+'-cred',a.credentials||[])+'</div>'+
         '<p class="small muted" style="margin:10px 0 0">Required with an expiration date: MN EMS and NREMT numbers if you hold EMR, EMT, AEMT or Paramedic; your AHA instructor ID if you\'re an AHA instructor; and your license if you\'re an RN, physician, PA or NP. Any number you enter needs its expiration date.</p>'+
         '<div class="form-grid" style="margin-top:10px">'+
-        inp(px+'-mnems','MN EMS license #',L.mnEms)+inp(px+'-mnemsexp','Expires',L.mnEmsExp,'date')+inp(px+'-nremt','NREMT #',L.nremt)+inp(px+'-nremtexp','Expires',L.nremtExp,'date')+
-        inp(px+'-aha','AHA instructor ID',L.aha)+inp(px+'-ahaexp','Expires',L.ahaExp,'date')+
-        inp(px+'-othertype','Other license type (e.g. MN RN)',L.otherType)+inp(px+'-othernum','Other license #',L.otherNum)+inp(px+'-otherexp','Expires',L.otherExp,'date')+
+        inp(px+'-mnems','MN EMS license #'+dyn(px,'mnems'),L.mnEms)+inp(px+'-mnemsexp','Expires'+dyn(px,'mnemsexp'),L.mnEmsExp,'date')+inp(px+'-nremt','NREMT #'+dyn(px,'nremt'),L.nremt)+inp(px+'-nremtexp','Expires'+dyn(px,'nremtexp'),L.nremtExp,'date')+
+        inp(px+'-aha','AHA instructor ID'+dyn(px,'aha'),L.aha)+inp(px+'-ahaexp','Expires'+dyn(px,'ahaexp'),L.ahaExp,'date')+
+        inp(px+'-othertype','Other license type (e.g. MN RN)'+dyn(px,'othertype'),L.otherType)+inp(px+'-othernum','Other license #'+dyn(px,'othernum'),L.otherNum)+inp(px+'-otherexp','Expires'+dyn(px,'otherexp'),L.otherExp,'date')+
         inp(px+'-other','Notes about other certifications (optional)',L.other,'text','full')+'</div></fieldset>';
       h+='<fieldset><legend>Experience and availability</legend><div class="form-grid">'+inp(px+'-agency','Current agency',a.agency)+inp(px+'-years','Years in EMS '+REQ,a.years,'number',''," min=\"0\"")+
         '<div class="full"><label for="'+px+'-teach">Teaching experience '+REQ+'</label><textarea id="'+px+'-teach" placeholder="Courses you\'ve taught, instructor certifications, precepting">'+esc(a.teaching||'')+'</textarea></div>'+
@@ -696,8 +710,8 @@
       var kinds=track==='Patient'?['Cert card','W-9','Direct deposit']:['Cert card','Resume','W-9','Direct deposit'];
       if(kinds.indexOf(S.upKind)<0) S.upKind='Cert card';
       out+='<div style="margin-top:12px"><label>Upload a document</label>'+chips('upKind',kinds.map(function(k){return [k,k==='Cert card'?'Cert or license card':k];}),S.upKind)+'</div><div class="form-grid" style="margin-top:10px">';
-      if(S.upKind==='Cert card') out+='<div><label>Which card</label><select id="up-cred"><option value="">Pick one…</option>'+['MN EMS license','NREMT card'].concat(CREDS).concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div><label>Expires</label><input id="up-exp" type="date"></div>';
-      out+='<div class="full"><label>File ('+(S.upKind==='Resume'?'PDF or Word':'PDF or photo')+', under 4 MB)</label><input id="up-file" type="file" accept="'+(S.upKind==='Resume'?'application/pdf,.doc,.docx':'application/pdf,image/*')+'"></div></div>'+
+      if(S.upKind==='Cert card') out+='<div><label>Which card '+REQ+'</label><select id="up-cred"><option value="">Pick one…</option>'+['MN EMS license','NREMT card'].concat(CREDS).concat(['CPR card','Driver\'s license','Other document']).map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select></div><div><label>Expires</label><input id="up-exp" type="date"></div>';
+      out+='<div class="full"><label>File '+REQ+' ('+(S.upKind==='Resume'?'PDF or Word':'PDF or photo')+', under 4 MB)</label><input id="up-file" type="file" accept="'+(S.upKind==='Resume'?'application/pdf,.doc,.docx':'application/pdf,image/*')+'"></div></div>'+
         ((S.upKind==='W-9'||S.upKind==='Direct deposit')?'<p class="note">Need the blank form? '+formLink(S.upKind)+'. This goes to a locked folder only ResQ\'s payroll contact can open. It won\'t be shown in the portal after upload.</p>':'')+
         '<div style="margin-top:12px"><button class="btn" data-act="upload">Upload</button></div>';
     } else out+='<p class="note">Uploads aren\'t switched on yet. Email your documents to '+esc(d.config.contact)+'.</p>';
@@ -986,7 +1000,7 @@
     if(act==='savePrefs') return run(b, authed('apiSaveMyPrefs', readPrefs('pf')),'Email settings saved');
     if(act==='saveApp'){ var pa=checkAppForm('ap', b.dataset.track, false); if(!pa) return; return run(b, authed('apiSaveApplication', pa),'Application saved'); }
     if(act==='appTrack'){ S.appTrack=b.dataset.v; render(); return; }
-    if(act==='track'){ S.track=b.dataset.v; $('su-form').innerHTML=appForm('su',{name:val('su-name'),email:val('su-email'),phone:val('su-phone'),address:val('su-address'),emergencyName:val('su-emname'),emergencyPhone:val('su-emphone')},S.track,'signup'); return; }
+    if(act==='track'){ S.track=b.dataset.v; $('su-form').innerHTML=appForm('su',{name:val('su-name'),email:val('su-email'),phone:val('su-phone'),address:val('su-address'),emergencyName:val('su-emname'),emergencyPhone:val('su-emphone')},S.track,'signup'); syncReq('su'); return; }
     if(act==='staffPreview'||act==='staffApply') return run(b, authed('apiAdminStaffing',S.bCourse,val('st-n'),act==='staffApply'), function(r){ return r.applied?'Staffing updated on '+r.changes.length+' slots':(r.changes.length?r.changes.length+' slots would change':'No changes needed'); }, function(r){ S.staff=Object.assign({courseId:S.bCourse},r); });
     if(act==='staffClear'){ S.staff=null; render(); return; }
     if(act==='upload'){
@@ -1036,12 +1050,14 @@
     if(t.dataset && t.dataset.act==='onlyOpen'){ S.onlyOpen=t.checked; render(); }
     if(t.dataset && t.dataset.act==='onlyMine'){ S.onlyMine=t.checked; render(); }
     if(t.dataset && t.dataset.act==='calGaps'){ S.calGaps=t.checked; render(); }
+    if(t.className && /-cred$/.test(t.className)) syncReq(t.className.replace('-cred',''));
     if(t.dataset && t.dataset.act==='digestPick'){ syncDigestChips(t.name.replace('-digest','')); }
   });
   document.addEventListener('toggle', function(ev){
     var d=ev.target; if(d.dataset && d.dataset.sess) S.openSess[d.dataset.sess]=d.open;
   }, true);
   document.addEventListener('input', function(ev){
+    var m=/^(su|ap|up)-(mnems|nremt|aha|othernum)$/.exec(ev.target.id||''); if(m) syncReq(m[1]);
     if(ev.target.id==='ins-search'){ S.insSearch=ev.target.value; var pos=ev.target.selectionStart; render(); var e=$('ins-search'); if(e){ e.focus(); e.setSelectionRange(pos,pos); } }
   });
 
