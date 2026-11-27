@@ -832,6 +832,41 @@
     return out;
   }
 
+  // ---------- Admin: course cost ----------
+  function courseCost(c){
+    var by={}, t={full:0,approved:0,pending:0,open:0,noPay:0}, row=function(r){ return by[r]||(by[r]={role:r,openings:0,filled:0,full:0,approved:0,pending:0}); };
+    c.sessions.forEach(function(s){
+      var live=s.status==='Open';
+      s.slots.forEach(function(sl){
+        var pay=Number(sl.pay)||0, x=row(sl.role);
+        if(live && sl.status==='Open'){
+          x.openings+=sl.openings; x.full+=pay*sl.openings; t.full+=pay*sl.openings;
+          t.open+=pay*Math.max(0, sl.openings-sl.held);
+          if(!pay && sl.openings) t.noPay++;
+        }
+        (sl.people||[]).forEach(function(p){ if(p.status==='Pending'){ x.pending+=pay; t.pending+=pay; } });
+      });
+    });
+    S.data.admin.requests.forEach(function(r){
+      if(r.courseId!==c.id || (r.status!=='Approved' && r.status!=='Drop requested')) return;
+      var x=row(r.role); x.filled++; x.approved+=Number(r.amount)||0; t.approved+=Number(r.amount)||0;
+    });
+    return {t:t, roles:Object.keys(by).map(function(k){return by[k];}).filter(function(x){return x.openings||x.filled||x.pending;}).sort(function(a,b){return b.full-a.full;})};
+  }
+  function costCard(c){
+    var k=courseCost(c), t=k.t;
+    var h='<div class="card"><h3>Course cost</h3><p class="small muted">Full staffing = every open slot filled at its slot pay. Approved = people you\'ve approved, at the amount they\'ll be paid (custom amounts included). Drop requests still count until you release them.</p>'+
+      '<div class="grid g4" style="margin:10px 0"><div class="stat accent"><div class="n">'+money(t.full)+'</div><div class="l">Full staffing</div></div>'+
+      '<div class="stat"><div class="n">'+money(t.approved)+'</div><div class="l">Approved so far</div></div>'+
+      '<div class="stat"><div class="n">'+money(t.approved+t.pending)+'</div><div class="l">If pending are approved (+'+money(t.pending)+')</div></div>'+
+      '<div class="stat"><div class="n">'+money(t.open)+'</div><div class="l">Openings nobody has requested</div></div></div>';
+    if(t.noPay) h+='<p class="small" style="color:var(--ember)">'+t.noPay+' open slot'+(t.noPay>1?'s have':' has')+' no pay set, so these totals are low. Use "Set pay for a role" below.</p>';
+    if(k.roles.length) h+='<details><summary class="small" style="cursor:pointer">By role</summary><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Role</th><th>Openings</th><th>Approved</th><th>Full staffing</th><th>Approved cost</th><th>Pending</th></tr></thead><tbody>'+
+      k.roles.map(function(x){ return '<tr><td>'+esc(x.role)+'</td><td>'+x.openings+'</td><td>'+x.filled+'</td><td>'+money(x.full)+'</td><td>'+money(x.approved)+'</td><td>'+(x.pending?money(x.pending):'-')+'</td></tr>'; }).join('')+
+      '<tr><td><b>Total</b></td><td></td><td></td><td><b>'+money(t.full)+'</b></td><td><b>'+money(t.approved)+'</b></td><td>'+(t.pending?'<b>'+money(t.pending)+'</b>':'-')+'</td></tr></tbody></table></div></details>';
+    return h+'</div>';
+  }
+
   // ---------- Admin: schedule builder ----------
   function vBuilder(){
     var d=S.data, roles=d.config.roles, out='<h2>Schedule builder</h2><p class="sub">Courses, class blocks and the slots in each block. Changes show up for instructors right away.</p>';
@@ -840,6 +875,7 @@
       return out+'<div class="card"><h3>New course</h3>'+courseForm({})+'<p class="note">New courses start hidden. Tip: to reuse a full schedule, open an existing course and use "Copy this course" instead.</p></div>';
     }
     var c=d.courses.filter(function(x){return x.id===S.bCourse;})[0]; if(!c) return out+'<div class="card"><p class="empty">Pick a course.</p></div>';
+    out+=costCard(c);
     out+='<div class="grid g2"><div class="card"><h3>Course details '+pill(c.status)+'</h3>'+courseForm(c)+'</div><div>';
     var st=S.staff&&S.staff.courseId===c.id?S.staff:null;
     out+='<div class="card"><h3>Staffing by enrollment</h3><p class="small muted">Openings follow each slot\'s staffing rule (1 per 3 students, etc.). Preview first, then apply. Nobody is removed if enrollment drops.</p>'+
